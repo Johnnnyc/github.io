@@ -908,14 +908,20 @@
                             data: [],
                             borderColor: 'rgb(255, 99, 132)',
                             backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                            tension: 0.4
+                            borderWidth: 2,
+                            pointRadius: 3,
+                            pointBackgroundColor: 'rgb(255, 99, 132)',
+                            tension: 0
                         },
                         {
                             label: '湿度 (%)',
                             data: [],
                             borderColor: 'rgb(54, 162, 235)',
                             backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                            tension: 0.4
+                            borderWidth: 2,
+                            pointRadius: 3,
+                            pointBackgroundColor: 'rgb(54, 162, 235)',
+                            tension: 0
                         }
                     ]
                 },
@@ -933,11 +939,14 @@
                             }
                         },
                         x: {
+                            type: 'category',
                             grid: {
                                 color: 'rgba(255, 255, 255, 0.1)'
                             },
                             ticks: {
-                                color: 'rgba(255, 255, 255, 0.8)'
+                                color: 'rgba(255, 255, 255, 0.8)',
+                                maxRotation: 45,
+                                minRotation: 45
                             }
                         }
                     },
@@ -975,7 +984,10 @@
                         sortedKeys.forEach((key) => {
                             const item = data[key];
                             const date = new Date(item.timestamp);
-                            const timeString = date.getHours() + ':' + (date.getMinutes() < 10 ? '0' : '') + date.getMinutes();
+                            // 格式化为 HH:MM 格式
+                            const hours = date.getHours().toString().padStart(2, '0');
+                            const minutes = date.getMinutes().toString().padStart(2, '0');
+                            const timeString = `${hours}:${minutes}`;
                             labels.push(timeString);
                             temperatureData.push(item.temperature);
                             humidityData.push(item.humidity);
