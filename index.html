@@ -733,12 +733,12 @@
         // MQTT配置
         const mqttConfig = {
             broker: '26fc98e1.ala.cn-hangzhou.emqx.cn',
-            port: 8083,
+            port: 8883,
             username: 'Johnney725',
             password: 'Zq?990725',
             clientId: 'ClientCHAPP',
             topic: 'esp32/topic',
-            useTLS: false,
+            useTLS: true,
             allowUntrusted: true,
             keepAlive: 60,
             cleanSession: true
@@ -748,8 +748,8 @@
         let mqttClient;
         
         function connectMQTT() {
-            const protocol = mqttConfig.useTLS ? 'wss' : 'ws';
-            const url = `${protocol}://${mqttConfig.broker}:${mqttConfig.port}/mqtt`;
+            const protocol = mqttConfig.useTLS ? 'mqtts' : 'mqtt';
+            const url = `${protocol}://${mqttConfig.broker}:${mqttConfig.port}`;
             
             mqttClient = mqtt.connect(url, {
                 clientId: mqttConfig.clientId,
