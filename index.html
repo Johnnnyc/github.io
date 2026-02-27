@@ -478,7 +478,7 @@
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- MQTT SDK -->
-    <script src="https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js"></script>
+    <script src="https://unpkg.com/mqtt@3.0.0/dist/mqtt.min.js"></script>
     <!-- Firebase SDK v8 -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-analytics.js"></script>
@@ -715,7 +715,8 @@
             this.reset();
         });
 
-        // Firebase 配置和初始化
+        // Firebase配置 - 暂时禁用
+        /*
         const firebaseConfig = {
             apiKey: "AIzaSyD_QorWShFv5BeS4j4VSJoh2mCxyvgJ68Y",
             authDomain: "esp32-sensor-data-ed101.firebaseapp.com",
@@ -729,14 +730,15 @@
         // 初始化 Firebase
         const app = firebase.initializeApp(firebaseConfig);
         const analytics = firebase.analytics();
+        */
         
         // MQTT配置
         const mqttConfig = {
             broker: 'z6fc98e1.ala.cn-hangzhou.emqxsl.cn',
             port: 8883,
-            username: 'Johnney725',
-            password: 'Zq?990725',
-            clientId: 'ClientCHAPP',
+            username: 'Johnney',
+            password: 'Zq??900725',
+            clientId: 'MYSELFWEB',
             topic: 'esp32/topic',
             useTLS: true,
             allowUntrusted: true,
