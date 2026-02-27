@@ -862,16 +862,24 @@
                     };
                     
                     // 存储到Firebase数据库
-                    database.ref('sensor-data/' + timestamp).set(sensorDataWithTimestamp)
-                        .then(() => {
-                            console.log('数据存储到Firebase成功');
-                        })
-                        .catch((error) => {
-                            console.error('数据存储到Firebase失败:', error);
-                        });
+                    try {
+                        database.ref('sensor-data/' + timestamp).set(sensorDataWithTimestamp)
+                            .then(() => {
+                                console.log('数据存储到Firebase成功');
+                            })
+                            .catch((error) => {
+                                console.error('数据存储到Firebase失败:', error);
+                            });
+                    } catch (firebaseError) {
+                        console.error('Firebase操作失败:', firebaseError);
+                    }
                     
                     // 更新图表
-                    updateChart();
+                    try {
+                        updateChart();
+                    } catch (chartError) {
+                        console.error('更新图表失败:', chartError);
+                    }
                 }
             } catch (error) {
                 console.error('解析传感器数据失败:', error);
