@@ -750,8 +750,9 @@
         let mqttClient;
         
         function connectMQTT() {
-            const protocol = mqttConfig.useTLS ? 'mqtts' : 'mqtt';
-            const url = `${protocol}://${mqttConfig.broker}:${mqttConfig.port}`;
+            // 使用WebSocket协议连接
+            const protocol = mqttConfig.useTLS ? 'wss' : 'ws';
+            const url = `${protocol}://${mqttConfig.broker}:8084/mqtt`;
             
             mqttClient = mqtt.connect(url, {
                 clientId: mqttConfig.clientId,
