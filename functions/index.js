@@ -121,9 +121,6 @@ function sendGetSensorData() {
 // 连接MQTT
 connectMQTT();
 
-// 每5分钟发送一次获取温湿度命令
-setInterval(sendGetSensorData, 5 * 60 * 1000);
-
 // API路由
 app.get('/sensor-data', (req, res) => {
   res.json(sensorData);
