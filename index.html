@@ -732,7 +732,8 @@
 
         // 初始化 Firebase
         const app = firebase.initializeApp(firebaseConfig);
-        const analytics = firebase.analytics();
+        // 禁用Analytics以避免连接超时
+        // const analytics = firebase.analytics();
         const database = firebase.database();
         
         // MQTT配置
