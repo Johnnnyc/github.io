@@ -808,13 +808,18 @@
         
         // 处理传感器数据
         function handleSensorData(data) {
+            // 忽略我们发送的"获取温湿度"命令
+            if (data === '获取温湿度') {
+                return;
+            }
+            
             try {
                 // 假设数据格式为JSON: {"temperature": 25.5, "humidity": 60.0}
                 const sensorData = JSON.parse(data);
                 if (sensorData.temperature !== undefined && sensorData.humidity !== undefined) {
                     document.getElementById('temperature').textContent = sensorData.temperature + ' °C';
                     document.getElementById('humidity').textContent = sensorData.humidity + ' %';
-                    document.getElementById('update-time').textContent = new Date().toLocaleString();
+                    document.getElementById('update-time').textContent = sensorData.datetime || new Date().toLocaleString();
                 }
             } catch (error) {
                 console.error('解析传感器数据失败:', error);
