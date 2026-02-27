@@ -836,6 +836,9 @@
             }
         }
         
+        // 上次处理数据的时间戳
+        let lastProcessedTime = 0;
+        
         // 处理传感器数据
         function handleSensorData(data) {
             // 忽略我们发送的"获取温湿度"命令
@@ -847,38 +850,46 @@
                 // 假设数据格式为JSON: {"temperature": 25.5, "humidity": 60.0}
                 const sensorData = JSON.parse(data);
                 if (sensorData.temperature !== undefined && sensorData.humidity !== undefined) {
-                    // 更新网页显示
-                    document.getElementById('temperature').textContent = sensorData.temperature + ' °C';
-                    document.getElementById('humidity').textContent = sensorData.humidity + ' %';
-                    document.getElementById('update-time').textContent = sensorData.datetime || new Date().toLocaleString();
-                    
-                    // 存储数据到Firebase
-                    const timestamp = Date.now();
-                    const sensorDataWithTimestamp = {
-                        temperature: sensorData.temperature,
-                        humidity: sensorData.humidity,
-                        datetime: sensorData.datetime || new Date().toISOString(),
-                        timestamp: timestamp
-                    };
-                    
-                    // 存储到Firebase数据库
-                    try {
-                        database.ref('sensor-data/' + timestamp).set(sensorDataWithTimestamp)
-                            .then(() => {
-                                console.log('数据存储到Firebase成功');
-                            })
-                            .catch((error) => {
-                                console.error('数据存储到Firebase失败:', error);
-                            });
-                    } catch (firebaseError) {
-                        console.error('Firebase操作失败:', firebaseError);
-                    }
-                    
-                    // 更新图表
-                    try {
-                        updateChart();
-                    } catch (chartError) {
-                        console.error('更新图表失败:', chartError);
+                    // 获取当前时间
+                    const currentTime = Date.now();
+                    // 限制处理频率，每5分钟只处理一次数据
+                    if (currentTime - lastProcessedTime >= 5 * 60 * 1000) {
+                        // 更新网页显示
+                        document.getElementById('temperature').textContent = sensorData.temperature + ' °C';
+                        document.getElementById('humidity').textContent = sensorData.humidity + ' %';
+                        document.getElementById('update-time').textContent = sensorData.datetime || new Date().toLocaleString();
+                        
+                        // 存储数据到Firebase
+                        const timestamp = currentTime;
+                        const sensorDataWithTimestamp = {
+                            temperature: sensorData.temperature,
+                            humidity: sensorData.humidity,
+                            datetime: sensorData.datetime || new Date().toISOString(),
+                            timestamp: timestamp
+                        };
+                        
+                        // 存储到Firebase数据库
+                        try {
+                            database.ref('sensor-data/' + timestamp).set(sensorDataWithTimestamp)
+                                .then(() => {
+                                    console.log('数据存储到Firebase成功');
+                                })
+                                .catch((error) => {
+                                    console.error('数据存储到Firebase失败:', error);
+                                });
+                        } catch (firebaseError) {
+                            console.error('Firebase操作失败:', firebaseError);
+                        }
+                        
+                        // 更新图表
+                        try {
+                            updateChart();
+                        } catch (chartError) {
+                            console.error('更新图表失败:', chartError);
+                        }
+                        
+                        // 更新上次处理时间
+                        lastProcessedTime = currentTime;
                     }
                 }
             } catch (error) {
