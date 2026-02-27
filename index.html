@@ -718,8 +718,8 @@
             this.reset();
         });
 
-        // 后端API地址
-        const API_URL = 'http://localhost:3001/api';
+        // 后端API地址（Firebase Functions）
+        const API_URL = 'https://us-central1-esp32-sensor-data-ed101.cloudfunctions.net/api';
         
         // 获取最新传感器数据
         async function fetchSensorData() {
