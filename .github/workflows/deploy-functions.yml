@@ -24,6 +24,6 @@ jobs:
       run: cd functions && npm install
 
     - name: Deploy to Firebase
-      run: firebase deploy --project esp32-sensor-data-ed101 --only functions --token=${{ secrets.FIREBASE_TOKEN }}
+      run: firebase deploy --project=esp32-sensor-data-ed101 --only functions --token=${{ secrets.FIREBASE_TOKEN }}
       env:
         FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
