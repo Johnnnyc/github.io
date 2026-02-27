@@ -718,157 +718,54 @@
             this.reset();
         });
 
-        // Firebase配置
-        const firebaseConfig = {
-            apiKey: "AIzaSyD_QorWShFv5BeS4j4VSJoh2mCxyvgJ68Y",
-            authDomain: "esp32-sensor-data-ed101.firebaseapp.com",
-            projectId: "esp32-sensor-data-ed101",
-            storageBucket: "esp32-sensor-data-ed101.firebasestorage.app",
-            messagingSenderId: "704351048238",
-            appId: "1:704351048238:web:f5b5c2728b7af9ea9145bf",
-            measurementId: "G-GRG73670NC",
-            databaseURL: "https://esp32-sensor-data-ed101-default-rtdb.firebaseio.com/"
-        };
-
-        // 初始化 Firebase
-        const app = firebase.initializeApp(firebaseConfig);
-        // 禁用Analytics以避免连接超时
-        // const analytics = firebase.analytics();
-        const database = firebase.database();
+        // 后端API地址
+        const API_URL = 'http://localhost:3001/api';
         
-        // MQTT配置
-        const mqttConfig = {
-            broker: 'z6fc98e1.ala.cn-hangzhou.emqxsl.cn',
-            port: 8883,
-            username: 'Johnney',
-            password: 'Zq??900725',
-            clientId: 'MYSELFWEB',
-            topic: 'esp32/topic',
-            useTLS: true,
-            allowUntrusted: true,
-            keepAlive: 60,
-            cleanSession: true
-        };
-        
-        // MQTT连接
-        let mqttClient;
-        
-        function connectMQTT() {
-            // 如果已经连接，先断开
-            if (mqttClient && mqttClient.connected) {
-                mqttClient.end();
-            }
-            
-            // 使用WebSocket协议连接
-            const protocol = mqttConfig.useTLS ? 'wss' : 'ws';
-            const url = `${protocol}://${mqttConfig.broker}:8084/mqtt`;
-            
-            mqttClient = mqtt.connect(url, {
-                clientId: mqttConfig.clientId + '_' + Date.now(), // 每次连接使用不同的客户端ID
-                username: mqttConfig.username,
-                password: mqttConfig.password,
-                clean: mqttConfig.cleanSession,
-                keepalive: mqttConfig.keepAlive,
-                rejectUnauthorized: !mqttConfig.allowUntrusted
-            });
-            
-            mqttClient.on('connect', () => {
-                console.log('MQTT连接成功');
-                // 订阅主题
-                mqttClient.subscribe(mqttConfig.topic, (err) => {
-                    if (err) {
-                        console.error('订阅失败:', err);
-                    } else {
-                        console.log('订阅成功');
-                        // 发送获取温湿度命令
-                        sendGetSensorData();
-                    }
-                });
-            });
-            
-            mqttClient.on('message', (topic, message) => {
-                console.log('收到消息:', topic, message.toString());
-                // 处理传感器数据
-                handleSensorData(message.toString());
-            });
-            
-            mqttClient.on('error', (error) => {
-                console.error('MQTT错误:', error);
-            });
-            
-            mqttClient.on('reconnect', () => {
-                console.log('MQTT重连中...');
-            });
-            
-            mqttClient.on('close', () => {
-                console.log('MQTT连接关闭');
-            });
-        }
-        
-        // 发送获取温湿度命令
-        function sendGetSensorData() {
-            if (mqttClient && mqttClient.connected) {
-                mqttClient.publish(mqttConfig.topic, '获取温湿度');
-                console.log('发送获取温湿度命令');
-            } else {
-                console.error('MQTT未连接');
-            }
-        }
-        
-        // 处理传感器数据
-        function handleSensorData(data) {
-            // 忽略我们发送的"获取温湿度"命令
-            if (data === '获取温湿度') {
-                return;
-            }
-            
+        // 获取最新传感器数据
+        async function fetchSensorData() {
             try {
-                // 假设数据格式为JSON: {"temperature": 25.5, "humidity": 60.0}
-                const sensorData = JSON.parse(data);
-                if (sensorData.temperature !== undefined && sensorData.humidity !== undefined) {
+                const response = await fetch(`${API_URL}/sensor-data`);
+                if (!response.ok) {
+                    throw new Error('网络响应错误');
+                }
+                const data = await response.json();
+                if (data.temperature !== null && data.humidity !== null) {
                     // 更新网页显示
-                    document.getElementById('temperature').textContent = sensorData.temperature + ' °C';
-                    document.getElementById('humidity').textContent = sensorData.humidity + ' %';
-                    document.getElementById('update-time').textContent = sensorData.datetime || new Date().toLocaleString();
-                    
-                    // 存储数据到Firebase
-                    const timestamp = Date.now();
-                    const sensorDataWithTimestamp = {
-                        temperature: sensorData.temperature,
-                        humidity: sensorData.humidity,
-                        datetime: sensorData.datetime || new Date().toISOString(),
-                        timestamp: timestamp
-                    };
-                    
-                    // 存储到Firebase数据库
-                    try {
-                        database.ref('sensor-data/' + timestamp).set(sensorDataWithTimestamp)
-                            .then(() => {
-                                console.log('数据存储到Firebase成功');
-                            })
-                            .catch((error) => {
-                                console.error('数据存储到Firebase失败:', error);
-                            });
-                    } catch (firebaseError) {
-                        console.error('Firebase操作失败:', firebaseError);
-                    }
+                    document.getElementById('temperature').textContent = data.temperature + ' °C';
+                    document.getElementById('humidity').textContent = data.humidity + ' %';
+                    document.getElementById('update-time').textContent = data.datetime || new Date().toLocaleString();
                 }
             } catch (error) {
-                console.error('解析传感器数据失败:', error);
+                console.error('获取传感器数据失败:', error);
             }
         }
         
-        // 每5分钟连接MQTT并发送获取温湿度命令
-        function connectAndSendData() {
-            // 连接MQTT（连接成功后会自动发送获取温湿度命令）
-            connectMQTT();
+        // 手动触发获取温湿度命令
+        async function sendGetSensorData() {
+            try {
+                const response = await fetch(`${API_URL}/get-sensor-data`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error('网络响应错误');
+                }
+                const data = await response.json();
+                console.log(data.message);
+                // 发送命令后，等待一段时间再获取数据
+                setTimeout(fetchSensorData, 1000);
+            } catch (error) {
+                console.error('发送获取温湿度命令失败:', error);
+            }
         }
         
-        // 每5分钟执行一次
-        setInterval(connectAndSendData, 5 * 60 * 1000);
+        // 每5分钟获取一次数据
+        setInterval(fetchSensorData, 5 * 60 * 1000);
         
-        // 页面加载时执行一次
-        connectAndSendData();
+        // 页面加载时获取一次数据
+        fetchSensorData();
     </script>
 </body>
 </html>
