@@ -342,6 +342,12 @@
             margin-bottom: 1rem;
         }
 
+        .small-text {
+            font-size: 0.8rem;
+            color: rgba(0, 240, 255, 0.7);
+            margin-top: -0.5rem;
+        }
+
         /* 联系我 */
         .contact {
             padding: 5rem 2rem;
@@ -471,6 +477,12 @@
         }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- MQTT SDK -->
+    <script src="https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js"></script>
 </head>
 <body>
     <!-- 背景效果 -->
@@ -537,6 +549,45 @@
                 <div class="about-image">
                     <div style="width: 100%; height: 400px; background: linear-gradient(45deg, #00f0ff, #0080ff); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 10rem; color: rgba(10, 10, 10, 0.8);">
                         <i class="fas fa-code"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 传感器数据 -->
+    <section id="sensor-data" class="projects">
+        <div class="container">
+            <h2 class="section-title">传感器数据</h2>
+            <div class="projects-grid">
+                <div class="project-card fade-in">
+                    <div class="project-image">
+                        <i class="fas fa-temperature-high"></i>
+                    </div>
+                    <div class="project-content">
+                        <h3>温度</h3>
+                        <p id="temperature">加载中...</p>
+                        <p class="small-text">实时更新</p>
+                    </div>
+                </div>
+                <div class="project-card fade-in">
+                    <div class="project-image">
+                        <i class="fas fa-tint"></i>
+                    </div>
+                    <div class="project-content">
+                        <h3>湿度</h3>
+                        <p id="humidity">加载中...</p>
+                        <p class="small-text">实时更新</p>
+                    </div>
+                </div>
+                <div class="project-card fade-in">
+                    <div class="project-image">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="project-content">
+                        <h3>更新时间</h3>
+                        <p id="update-time">加载中...</p>
+                        <p class="small-text">实时更新</p>
                     </div>
                 </div>
             </div>
@@ -663,6 +714,115 @@
             alert('留言已发送！');
             this.reset();
         });
+
+        // Firebase 配置和初始化
+        const firebaseConfig = {
+            apiKey: "AIzaSyD_QorWShFv5BeS4j4VSJoh2mCxyvgJ68Y",
+            authDomain: "esp32-sensor-data-ed101.firebaseapp.com",
+            projectId: "esp32-sensor-data-ed101",
+            storageBucket: "esp32-sensor-data-ed101.firebasestorage.app",
+            messagingSenderId: "704351048238",
+            appId: "1:704351048238:web:f5b5c2728b7af9ea9145bf",
+            measurementId: "G-GRG73670NC"
+        };
+
+        // 初始化 Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const analytics = firebase.analytics(app);
+        
+        // MQTT配置
+        const mqttConfig = {
+            broker: '26fc98e1.ala.cn-hangzhou.emqx.cn',
+            port: 8883,
+            username: 'Johnney725',
+            password: 'Zq?990725',
+            clientId: 'ClientCHAPP',
+            topic: 'esp32/topic',
+            useTLS: true,
+            allowUntrusted: true,
+            keepAlive: 60,
+            cleanSession: true
+        };
+        
+        // MQTT连接
+        let mqttClient;
+        
+        function connectMQTT() {
+            const protocol = mqttConfig.useTLS ? 'mqtts' : 'mqtt';
+            const url = `${protocol}://${mqttConfig.broker}:${mqttConfig.port}`;
+            
+            mqttClient = mqtt.connect(url, {
+                clientId: mqttConfig.clientId,
+                username: mqttConfig.username,
+                password: mqttConfig.password,
+                clean: mqttConfig.cleanSession,
+                keepalive: mqttConfig.keepAlive,
+                rejectUnauthorized: !mqttConfig.allowUntrusted
+            });
+            
+            mqttClient.on('connect', () => {
+                console.log('MQTT连接成功');
+                // 订阅主题
+                mqttClient.subscribe(mqttConfig.topic, (err) => {
+                    if (err) {
+                        console.error('订阅失败:', err);
+                    } else {
+                        console.log('订阅成功');
+                        // 发送获取温湿度命令
+                        sendGetSensorData();
+                    }
+                });
+            });
+            
+            mqttClient.on('message', (topic, message) => {
+                console.log('收到消息:', topic, message.toString());
+                // 处理传感器数据
+                handleSensorData(message.toString());
+            });
+            
+            mqttClient.on('error', (error) => {
+                console.error('MQTT错误:', error);
+            });
+            
+            mqttClient.on('reconnect', () => {
+                console.log('MQTT重连中...');
+            });
+            
+            mqttClient.on('close', () => {
+                console.log('MQTT连接关闭');
+            });
+        }
+        
+        // 发送获取温湿度命令
+        function sendGetSensorData() {
+            if (mqttClient && mqttClient.connected) {
+                mqttClient.publish(mqttConfig.topic, '获取温湿度');
+                console.log('发送获取温湿度命令');
+            } else {
+                console.error('MQTT未连接');
+            }
+        }
+        
+        // 处理传感器数据
+        function handleSensorData(data) {
+            try {
+                // 假设数据格式为JSON: {"temperature": 25.5, "humidity": 60.0}
+                const sensorData = JSON.parse(data);
+                if (sensorData.temperature !== undefined && sensorData.humidity !== undefined) {
+                    document.getElementById('temperature').textContent = sensorData.temperature + ' °C';
+                    document.getElementById('humidity').textContent = sensorData.humidity + ' %';
+                    document.getElementById('update-time').textContent = new Date().toLocaleString();
+                }
+            } catch (error) {
+                console.error('解析传感器数据失败:', error);
+            }
+        }
+        
+        // 初始化MQTT连接
+        connectMQTT();
+        
+        // 每30秒发送一次获取温湿度命令
+        setInterval(sendGetSensorData, 30000);
     </script>
 </body>
 </html>
