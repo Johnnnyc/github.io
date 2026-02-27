@@ -32,3 +32,6 @@ dist-ssr
 
 # Backup files
 backup_*.html
+
+# Firebase service account
+*.json
