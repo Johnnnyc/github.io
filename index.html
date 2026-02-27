@@ -475,6 +475,28 @@
             opacity: 1;
             transform: translateY(0);
         }
+
+        /* 图表容器样式 */
+        .chart-container {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 3rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .chart-container h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            color: #00f0ff;
+            text-align: center;
+        }
+
+        #sensorChart {
+            max-width: 100%;
+            height: 400px;
+        }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- MQTT SDK -->
@@ -483,6 +505,8 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-analytics.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <!-- 背景效果 -->
@@ -559,6 +583,13 @@
     <section id="sensor-data" class="projects">
         <div class="container">
             <h2 class="section-title">传感器数据</h2>
+            
+            <!-- 图表显示 -->
+            <div class="chart-container">
+                <h3>过去6小时数据</h3>
+                <canvas id="sensorChart"></canvas>
+            </div>
+            
             <div class="projects-grid">
                 <div class="project-card fade-in">
                     <div class="project-image">
@@ -715,8 +746,7 @@
             this.reset();
         });
 
-        // Firebase配置 - 暂时禁用
-        /*
+        // Firebase配置
         const firebaseConfig = {
             apiKey: "AIzaSyD_QorWShFv5BeS4j4VSJoh2mCxyvgJ68Y",
             authDomain: "esp32-sensor-data-ed101.firebaseapp.com",
@@ -730,7 +760,7 @@
         // 初始化 Firebase
         const app = firebase.initializeApp(firebaseConfig);
         const analytics = firebase.analytics();
-        */
+        const database = firebase.database();
         
         // MQTT配置
         const mqttConfig = {
@@ -817,9 +847,31 @@
                 // 假设数据格式为JSON: {"temperature": 25.5, "humidity": 60.0}
                 const sensorData = JSON.parse(data);
                 if (sensorData.temperature !== undefined && sensorData.humidity !== undefined) {
+                    // 更新网页显示
                     document.getElementById('temperature').textContent = sensorData.temperature + ' °C';
                     document.getElementById('humidity').textContent = sensorData.humidity + ' %';
                     document.getElementById('update-time').textContent = sensorData.datetime || new Date().toLocaleString();
+                    
+                    // 存储数据到Firebase
+                    const timestamp = Date.now();
+                    const sensorDataWithTimestamp = {
+                        temperature: sensorData.temperature,
+                        humidity: sensorData.humidity,
+                        datetime: sensorData.datetime || new Date().toISOString(),
+                        timestamp: timestamp
+                    };
+                    
+                    // 存储到Firebase数据库
+                    database.ref('sensor-data/' + timestamp).set(sensorDataWithTimestamp)
+                        .then(() => {
+                            console.log('数据存储到Firebase成功');
+                        })
+                        .catch((error) => {
+                            console.error('数据存储到Firebase失败:', error);
+                        });
+                    
+                    // 更新图表
+                    updateChart();
                 }
             } catch (error) {
                 console.error('解析传感器数据失败:', error);
@@ -829,8 +881,118 @@
         // 初始化MQTT连接
         connectMQTT();
         
-        // 每30秒发送一次获取温湿度命令
-        setInterval(sendGetSensorData, 30000);
+        // 每5分钟发送一次获取温湿度命令
+        setInterval(sendGetSensorData, 5 * 60 * 1000);
+        
+        // 图表对象
+        let sensorChart;
+        
+        // 初始化图表
+        function initChart() {
+            const ctx = document.getElementById('sensorChart').getContext('2d');
+            sensorChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: '温度 (°C)',
+                            data: [],
+                            borderColor: 'rgb(255, 99, 132)',
+                            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                            tension: 0.4
+                        },
+                        {
+                            label: '湿度 (%)',
+                            data: [],
+                            borderColor: 'rgb(54, 162, 235)',
+                            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.8)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.8)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: 'rgba(255, 255, 255, 0.8)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 更新图表
+        function updateChart() {
+            // 计算6小时前的时间戳
+            const sixHoursAgo = Date.now() - 6 * 60 * 60 * 1000;
+            
+            // 从Firebase获取过去6小时的数据
+            database.ref('sensor-data')
+                .orderByChild('timestamp')
+                .startAt(sixHoursAgo)
+                .once('value')
+                .then((snapshot) => {
+                    const data = snapshot.val();
+                    const labels = [];
+                    const temperatureData = [];
+                    const humidityData = [];
+                    
+                    if (data) {
+                        // 按时间戳排序
+                        const sortedKeys = Object.keys(data).sort((a, b) => parseInt(a) - parseInt(b));
+                        
+                        sortedKeys.forEach((key) => {
+                            const item = data[key];
+                            const date = new Date(item.timestamp);
+                            const timeString = date.getHours() + ':' + (date.getMinutes() < 10 ? '0' : '') + date.getMinutes();
+                            labels.push(timeString);
+                            temperatureData.push(item.temperature);
+                            humidityData.push(item.humidity);
+                        });
+                    }
+                    
+                    // 更新图表数据
+                    if (sensorChart) {
+                        sensorChart.data.labels = labels;
+                        sensorChart.data.datasets[0].data = temperatureData;
+                        sensorChart.data.datasets[1].data = humidityData;
+                        sensorChart.update();
+                    }
+                })
+                .catch((error) => {
+                    console.error('获取图表数据失败:', error);
+                });
+        }
+        
+        // 页面加载完成后初始化图表
+        window.onload = function() {
+            initChart();
+            // 初始化时获取一次数据
+            updateChart();
+        };
     </script>
 </body>
 </html>
