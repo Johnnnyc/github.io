@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const mqtt = require('mqtt');
-const admin = require('firebase-admin');
 
 // 初始化Express服务器
 const app = express();
@@ -10,16 +9,6 @@ const port = process.env.PORT || 3001;
 // 配置CORS
 app.use(cors());
 app.use(express.json());
-
-// 初始化Firebase Admin SDK
-const serviceAccount = require('./serviceAccountKey.json');
-
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  databaseURL: 'https://esp32-sensor-data-ed101-default-rtdb.firebaseio.com/'
-});
-
-const database = admin.database();
 
 // MQTT配置
 const mqttConfig = {
@@ -38,6 +27,9 @@ let sensorData = {
   humidity: null,
   datetime: null
 };
+
+// 历史数据存储
+let sensorDataHistory = [];
 
 function connectMQTT() {
   // 使用MQTT协议连接
@@ -94,7 +86,7 @@ function handleSensorData(data) {
         datetime: sensorDataObj.datetime || new Date().toLocaleString()
       };
       
-      // 存储数据到Firebase
+      // 存储数据到内存历史记录
       const timestamp = Date.now();
       const sensorDataWithTimestamp = {
         temperature: sensorData.temperature,
@@ -103,13 +95,14 @@ function handleSensorData(data) {
         timestamp: timestamp
       };
       
-      database.ref('sensor-data/' + timestamp).set(sensorDataWithTimestamp)
-        .then(() => {
-          console.log('数据存储到Firebase成功');
-        })
-        .catch((error) => {
-          console.error('数据存储到Firebase失败:', error);
-        });
+      sensorDataHistory.push(sensorDataWithTimestamp);
+      
+      // 只保留最近100条数据
+      if (sensorDataHistory.length > 100) {
+        sensorDataHistory.shift();
+      }
+      
+      console.log('数据存储到内存成功');
     }
   } catch (error) {
     console.error('解析传感器数据失败:', error);
