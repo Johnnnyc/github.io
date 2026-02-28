@@ -4,7 +4,7 @@
   "description": "Backend service for MQTT sensor data",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node server-simple.js",
     "build": "echo 'Build complete'"
   },
   "dependencies": {
