@@ -1,0 +1,12 @@
+run = "cd backend && npm start"
+entrypoint = "backend/server.js"
+
+[packager]
+language = "nodejs"
+
+[languages.javascript]
+pattern = "**/*.js"
+syntax = "javascript"
+
+[deployment]
+run = ["sh", "-c", "cd backend && npm start"]
