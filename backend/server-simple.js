@@ -7,11 +7,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // 配置CORS
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type']
-}));
+app.use(cors());
 app.use(express.json());
 
 // 传感器数据
@@ -90,7 +86,7 @@ app.post('/api/get-sensor-data', (req, res) => {
 });
 
 // 启动服务器
-app.listen(port, '0.0.0.0', () => {
-  console.log(`服务器运行在 http://localhost:${port}`);
-  console.log(`API地址: http://localhost:${port}/api/sensor-data`);
+app.listen(5000, '0.0.0.0', () => {
+  console.log(`服务器运行在 http://localhost:5000`);
+  console.log(`API地址: http://localhost:5000/api/sensor-data`);
 });
