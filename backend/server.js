@@ -131,6 +131,84 @@ setInterval(sendGetSensorData, 5 * 60 * 1000);
 
 // API接口
 
+// 根路由 - 显示监控页面
+app.get('/', (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>ESP32传感器数据监控</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #1a1a2e; color: white; }
+        .container { max-width: 600px; margin: 0 auto; }
+        h1 { text-align: center; color: #00f0ff; }
+        .data-card { background: #16213e; padding: 20px; margin: 20px 0; border-radius: 10px; }
+        .data-item { display: flex; justify-content: space-between; margin: 10px 0; }
+        .label { color: #888; }
+        .value { color: #00f0ff; font-size: 24px; font-weight: bold; }
+        .refresh-btn { 
+          background: #00f0ff; color: #1a1a2e; border: none; padding: 15px 30px; 
+          border-radius: 5px; cursor: pointer; font-size: 16px; margin-top: 20px;
+        }
+        .refresh-btn:hover { background: #00c0cc; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h1>🌡️ ESP32传感器数据监控</h1>
+        <div class="data-card">
+          <div class="data-item">
+            <span class="label">温度:</span>
+            <span class="value" id="temperature">-- °C</span>
+          </div>
+          <div class="data-item">
+            <span class="label">湿度:</span>
+            <span class="value" id="humidity">-- %</span>
+          </div>
+          <div class="data-item">
+            <span class="label">更新时间:</span>
+            <span class="value" id="datetime">--</span>
+          </div>
+        </div>
+        <button class="refresh-btn" onclick="refreshData()">🔄 刷新数据</button>
+        <button class="refresh-btn" onclick="getSensorData()">📡 获取传感器数据</button>
+      </div>
+      <script>
+        async function refreshData() {
+          try {
+            const response = await fetch('/api/sensor-data');
+            const data = await response.json();
+            document.getElementById('temperature').textContent = (data.temperature || '--') + ' °C';
+            document.getElementById('humidity').textContent = (data.humidity || '--') + ' %';
+            document.getElementById('datetime').textContent = data.datetime || '--';
+          } catch (error) {
+            console.error('获取数据失败:', error);
+            alert('获取数据失败，请检查连接');
+          }
+        }
+        
+        async function getSensorData() {
+          try {
+            const response = await fetch('/api/get-sensor-data', { method: 'POST' });
+            const data = await response.json();
+            alert(data.message);
+            setTimeout(refreshData, 2000);
+          } catch (error) {
+            console.error('发送命令失败:', error);
+            alert('发送命令失败');
+          }
+        }
+        
+        // 自动刷新
+        refreshData();
+        setInterval(refreshData, 30000);
+      </script>
+    </body>
+    </html>
+  `);
+});
+
 // 获取最新传感器数据
 app.get('/api/sensor-data', (req, res) => {
   res.json(sensorData);
