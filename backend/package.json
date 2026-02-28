@@ -2,6 +2,7 @@
   "name": "esp32-sensor-backend",
   "version": "1.0.0",
   "description": "Backend service for MQTT sensor data",
+  "type": "module",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

@@ -1,6 +1,6 @@
-const express = require('express');
-const cors = require('cors');
-const mqtt = require('mqtt');
+import express from 'express';
+import cors from 'cors';
+import mqtt from 'mqtt';
 
 // 初始化Express服务器
 const app = express();
@@ -10,7 +10,6 @@ const port = process.env.PORT || 3000;
 // 记录服务器启动信息
 console.log('服务器启动中...');
 console.log('使用端口:', port);
-console.log('当前目录:', __dirname);
 
 // 配置CORS - 允许GitHub Pages和其他域名访问
 const allowedOrigins = [
