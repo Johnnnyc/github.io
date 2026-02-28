@@ -248,7 +248,12 @@ app.post('/api/get-sensor-data', (req, res) => {
   res.json({ message: '获取温湿度命令已发送' });
 });
 
+// 健康检查路由
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
 // 启动服务器
-app.listen(port, '0.0.0.0', () => {
+app.listen(port, () => {
   console.log(`服务器运行在端口 ${port}`);
 });
