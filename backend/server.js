@@ -10,14 +10,14 @@ const port = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-// MQTT配置
+// MQTT配置（使用环境变量）
 const mqttConfig = {
-  broker: 'z6fc98e1.ala.cn-hangzhou.emqxsl.cn',
-  port: 8883,
-  username: 'Johnney',
-  password: 'Zq??900725',
-  clientId: 'MYSELFWEB_BACKEND',
-  topic: 'esp32/topic'
+  broker: process.env.MQTT_BROKER || 'z6fc98e1.ala.cn-hangzhou.emqxsl.cn',
+  port: parseInt(process.env.MQTT_PORT) || 8883,
+  username: process.env.MQTT_USERNAME || 'Johnney',
+  password: process.env.MQTT_PASSWORD || 'Zq??900725',
+  clientId: process.env.MQTT_CLIENT_ID || 'MYSELFWEB_BACKEND',
+  topic: process.env.MQTT_TOPIC || 'esp32/topic'
 };
 
 // MQTT连接
@@ -143,6 +143,6 @@ app.post('/api/get-sensor-data', (req, res) => {
 });
 
 // 启动服务器
-app.listen(port, () => {
-  console.log(`服务器运行在 http://localhost:${port}`);
+app.listen(port, '0.0.0.0', () => {
+  console.log(`服务器运行在端口 ${port}`);
 });
