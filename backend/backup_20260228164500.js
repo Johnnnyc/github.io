@@ -7,11 +7,6 @@ const app = express();
 // Replit使用环境变量PORT，如果没有则使用3000
 const port = process.env.PORT || 3000;
 
-// 记录服务器启动信息
-console.log('服务器启动中...');
-console.log('使用端口:', port);
-console.log('当前目录:', __dirname);
-
 // 配置CORS - 允许GitHub Pages和其他域名访问
 const allowedOrigins = [
   'https://johnnnyc.github.io',

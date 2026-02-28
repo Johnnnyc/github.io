@@ -1,4 +1,4 @@
-run = "cd backend && npm start"
+run = "cd backend && npm install && node server.js"
 entrypoint = "backend/server.js"
 
 [packager]
@@ -9,4 +9,4 @@ pattern = "**/*.js"
 syntax = "javascript"
 
 [deployment]
-run = ["sh", "-c", "cd backend && npm start"]
+run = ["sh", "-c", "cd backend && npm install && node server.js"]
