@@ -1,3 +1,4 @@
+modules = ["nodejs-20", "web", "nix"]
 [packager]
 language = "nodejs"
 
@@ -12,4 +13,4 @@ run = ["sh", "-c", "cd backend && npm install && node server.js"]
 NODE_ENV = "production"
 
 [nix]
-channel = "stable-23.11"
+channel = "stable-25_05"
