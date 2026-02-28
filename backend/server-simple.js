@@ -70,6 +70,9 @@ function sendGetSensorData() {
   mqttClient.publish(mqttConfig.topic, '获取温湿度');
 }
 
+// 定时获取数据（1分钟一次）
+setInterval(sendGetSensorData, 1 * 60 * 1000);
+
 // 根路由
 app.get('/', (req, res) => {
   res.json({ message: 'ESP32传感器数据API' });
