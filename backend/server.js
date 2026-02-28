@@ -6,8 +6,31 @@ const mqtt = require('mqtt');
 const app = express();
 const port = process.env.PORT || 3001;
 
-// 配置CORS
-app.use(cors());
+// 配置CORS - 允许GitHub Pages和其他域名访问
+const allowedOrigins = [
+  'https://johnnnyc.github.io',
+  'http://localhost:3000',
+  'http://localhost:8080',
+  '*'  // 允许所有来源（开发环境）
+];
+
+app.use(cors({
+  origin: function(origin, callback) {
+    // 允许没有origin的请求（如Postman）
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes('*')) {
+      callback(null, true);
+    } else {
+      console.log('CORS拒绝访问:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
+
 app.use(express.json());
 
 // MQTT配置（使用环境变量）
