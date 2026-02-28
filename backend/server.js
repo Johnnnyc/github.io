@@ -4,7 +4,8 @@ const mqtt = require('mqtt');
 
 // 初始化Express服务器
 const app = express();
-const port = process.env.PORT || 3001;
+// Replit使用环境变量PORT，如果没有则使用3000
+const port = process.env.PORT || 3000;
 
 // 配置CORS - 允许GitHub Pages和其他域名访问
 const allowedOrigins = [
