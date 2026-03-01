@@ -436,6 +436,8 @@
             font-size: 0.9rem;
         }
 
+
+
         /* 响应式设计 */
         @media (max-width: 768px) {
             .nav-links {
@@ -594,6 +596,10 @@
                     </div>
                 </div>
             </div>
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="btn btn-primary" onclick="refreshData()">🔄 刷新数据</button>
+                <button class="btn btn-secondary" onclick="getSensorData()" style="margin-left: 10px;">📡 获取传感器数据</button>
+            </div>
         </div>
     </section>
 
@@ -718,54 +724,35 @@
             this.reset();
         });
 
-        // 后端API地址（Replit服务器）
-        const API_URL = 'https://6be552f2-d09f-4d23-9505-58846266f57b-00-51bi4tpuumjw.sisko.replit.dev/api';
-        
         // 获取最新传感器数据
-        async function fetchSensorData() {
-            try {
-                const response = await fetch(`${API_URL}/sensor-data`);
-                if (!response.ok) {
-                    throw new Error('网络响应错误');
-                }
-                const data = await response.json();
-                if (data.temperature !== null && data.humidity !== null) {
-                    // 更新网页显示
-                    document.getElementById('temperature').textContent = data.temperature + ' °C';
-                    document.getElementById('humidity').textContent = data.humidity + ' %';
-                    document.getElementById('update-time').textContent = data.datetime || new Date().toLocaleString();
-                }
-            } catch (error) {
-                console.error('获取传感器数据失败:', error);
-            }
+        async function refreshData() {
+          try {
+            const response = await fetch('/api/sensor-data');
+            const data = await response.json();
+            document.getElementById('temperature').textContent = (data.temperature || '--') + ' °C';
+            document.getElementById('humidity').textContent = (data.humidity || '--') + ' %';
+            document.getElementById('update-time').textContent = data.datetime || '--';
+          } catch (error) {
+            console.error('获取数据失败:', error);
+            alert('获取数据失败，请检查连接');
+          }
         }
-        
-        // 手动触发获取温湿度命令
-        async function sendGetSensorData() {
-            try {
-                const response = await fetch(`${API_URL}/get-sensor-data`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-                if (!response.ok) {
-                    throw new Error('网络响应错误');
-                }
-                const data = await response.json();
-                console.log(data.message);
-                // 发送命令后，等待一段时间再获取数据
-                setTimeout(fetchSensorData, 1000);
-            } catch (error) {
-                console.error('发送获取温湿度命令失败:', error);
-            }
+
+        async function getSensorData() {
+          try {
+            const response = await fetch('/api/get-sensor-data', { method: 'POST' });
+            const data = await response.json();
+            alert(data.message);
+            setTimeout(refreshData, 2000);
+          } catch (error) {
+            console.error('发送命令失败:', error);
+            alert('发送命令失败');
+          }
         }
-        
-        // 每5分钟获取一次数据
-        setInterval(fetchSensorData, 5 * 60 * 1000);
-        
-        // 页面加载时获取一次数据
-        fetchSensorData();
+
+        // 自动刷新
+        refreshData();
+        setInterval(refreshData, 30000);
     </script>
 </body>
 </html>
