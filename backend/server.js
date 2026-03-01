@@ -322,7 +322,21 @@ app.get('/api/history_data', (req, res) => {
 
 // 健康检查路由
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok' });
+  // 记录ping请求
+  const clientIP = req.ip || req.connection.remoteAddress;
+  const userAgent = req.headers['user-agent'];
+  console.log('========================================');
+  console.log(`[${new Date().toLocaleString()}] 收到健康检查请求`);
+  console.log(`客户端IP: ${clientIP}`);
+  console.log(`用户代理: ${userAgent}`);
+  console.log('========================================');
+  
+  res.status(200).json({ 
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    server: 'ESP32 Sensor Backend',
+    uptime: process.uptime()
+  });
 });
 
 // 启动服务器

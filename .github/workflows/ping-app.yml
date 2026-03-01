@@ -2,8 +2,8 @@ name: Ping App
 
 on:
   schedule:
-    # 每5分钟运行一次
-    - cron: '*/5 * * * *'
+    # 每4分钟运行一次
+    - cron: '*/4 * * * *'
   workflow_dispatch:
     # 允许手动触发
 
@@ -16,8 +16,21 @@ jobs:
           # 替换为你的Replit应用URL
           REPLIT_URL="https://6be552f2-d09f-4d23-9505-58846266f57b-00-51bi4tpuumjw.sisko.replit.dev:3000"
           
-          # 向健康检查端点发送请求
-          echo "Pinging health endpoint..."
-          curl -s -o /dev/null -w "%{http_code}" "$REPLIT_URL/health"
+          # 记录开始时间
+          echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting ping to $REPLIT_URL/health"
           
-          echo "Ping completed successfully!"
+          # 向健康检查端点发送请求，记录详细信息
+          response=$(curl -s -w "%{http_code}" -o /dev/null "$REPLIT_URL/health")
+          
+          # 记录响应状态
+          echo "[$(date '+%Y-%m-%d %H:%M:%S')] Ping response: $response"
+          
+          # 检查响应状态
+          if [ "$response" -eq 200 ]; then
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Ping successful!"
+          else
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Ping failed with status code: $response"
+            exit 1
+          fi
+          
+          echo "[$(date '+%Y-%m-%d %H:%M:%S')] Ping completed."
