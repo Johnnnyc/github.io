@@ -603,6 +603,19 @@
         </div>
     </section>
 
+    <!-- 数据可视化 -->
+    <section id="data-visualization" class="projects">
+        <div class="container">
+            <h2 class="section-title">数据可视化</h2>
+            <div class="project-card fade-in" style="padding: 20px;">
+                <h3>温湿度变化趋势</h3>
+                <div style="height: 400px;">
+                    <canvas id="sensorChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- 项目 -->
     <section id="projects" class="projects">
         <div class="container">
@@ -724,6 +737,22 @@
             this.reset();
         });
 
+        // Firebase配置
+        const firebaseConfig = {
+            apiKey: "AIzaSyD_QorWShFv5BeS4j4VSJoh2mCxyvgJ68Y",
+            authDomain: "esp32-sensor-data-ed101.firebaseapp.com",
+            databaseURL: "https://esp32-sensor-data-ed101-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "esp32-sensor-data-ed101",
+            storageBucket: "esp32-sensor-data-ed101.firebasestorage.app",
+            messagingSenderId: "704351048238",
+            appId: "1:704351048238:web:f5b5c2728b7af9ea9145bf",
+            measurementId: "G-GRG73670NC"
+        };
+
+        // 初始化Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
         // 后端API地址（Replit服务器，包含端口3000）
         const API_URL = 'https://6be552f2-d09f-4d23-9505-58846266f57b-00-51bi4tpuumjw.sisko.replit.dev:3000/api';
         
@@ -735,6 +764,26 @@
             document.getElementById('temperature').textContent = (data.temperature || '--') + ' °C';
             document.getElementById('humidity').textContent = (data.humidity || '--') + ' %';
             document.getElementById('update-time').textContent = data.datetime || '--';
+            
+            // 存储数据到Firebase
+            if (data.temperature && data.humidity) {
+              const timestamp = Date.now();
+              const sensorDataWithTimestamp = {
+                temperature: data.temperature,
+                humidity: data.humidity,
+                datetime: data.datetime || new Date().toLocaleString(),
+                timestamp: timestamp
+              };
+              
+              // 存储到Firebase数据库
+              database.ref('sensor-data/' + timestamp).set(sensorDataWithTimestamp)
+                .then(() => {
+                  console.log('数据存储到Firebase成功');
+                })
+                .catch((error) => {
+                  console.error('数据存储到Firebase失败:', error);
+                });
+            }
           } catch (error) {
             console.error('获取数据失败:', error);
             alert('获取数据失败，请检查连接');
@@ -756,6 +805,85 @@
         // 自动刷新
         refreshData();
         setInterval(refreshData, 3*60*1000);
+        
+        // 绘制传感器数据图表
+        function drawSensorChart() {
+            // 从Firebase获取历史数据
+            database.ref('sensor-data').orderByChild('timestamp').once('value')
+                .then((snapshot) => {
+                    const data = snapshot.val();
+                    const timestamps = [];
+                    const temperatures = [];
+                    const humidities = [];
+                    
+                    // 处理数据
+                    if (data) {
+                        Object.values(data).forEach((item) => {
+                            if (item.timestamp && item.temperature && item.humidity) {
+                                const date = new Date(item.timestamp);
+                                timestamps.push(date.toLocaleString());
+                                temperatures.push(item.temperature);
+                                humidities.push(item.humidity);
+                            }
+                        });
+                    }
+                    
+                    // 绘制图表
+                    const ctx = document.getElementById('sensorChart').getContext('2d');
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: timestamps,
+                            datasets: [
+                                {
+                                    label: '温度 (°C)',
+                                    data: temperatures,
+                                    borderColor: 'rgb(255, 99, 132)',
+                                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                    borderWidth: 2,
+                                    tension: 0.4
+                                },
+                                {
+                                    label: '湿度 (%)',
+                                    data: humidities,
+                                    borderColor: 'rgb(54, 162, 235)',
+                                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                                    borderWidth: 2,
+                                    tension: 0.4
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    beginAtZero: false
+                                }
+                            },
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: '温湿度变化趋势',
+                                    font: {
+                                        size: 16
+                                    }
+                                },
+                                legend: {
+                                    display: true,
+                                    position: 'top'
+                                }
+                            }
+                        }
+                    });
+                })
+                .catch((error) => {
+                    console.error('获取历史数据失败:', error);
+                });
+        }
+        
+        // 页面加载完成后绘制图表
+        window.addEventListener('load', drawSensorChart);
     </script>
 </body>
 </html>
