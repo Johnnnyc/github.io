@@ -596,10 +596,10 @@
                     </div>
                 </div>
             </div>
-            <div style="text-align: center; margin-top: 20px;">
+            <!-- <div style="text-align: center; margin-top: 20px;">
                 <button class="btn btn-primary" onclick="refreshData()">🔄 刷新数据</button>
                 <button class="btn btn-secondary" onclick="getSensorData()" style="margin-left: 10px;">📡 获取传感器数据</button>
-            </div>
+            </div> -->
         </div>
     </section>
 
@@ -755,7 +755,7 @@
 
         // 自动刷新
         refreshData();
-        setInterval(refreshData, 10000);
+        setInterval(refreshData, 3*60*1000);
     </script>
 </body>
 </html>
