@@ -11,7 +11,7 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping API endpoints
+      - name: Ping health endpoint
         run: |
           # 替换为你的Replit应用URL
           REPLIT_URL="https://6be552f2-d09f-4d23-9505-58846266f57b-00-51bi4tpuumjw.sisko.replit.dev:3000"
@@ -19,13 +19,5 @@ jobs:
           # 向健康检查端点发送请求
           echo "Pinging health endpoint..."
           curl -s -o /dev/null -w "%{http_code}" "$REPLIT_URL/health"
-          
-          # 向传感器数据端点发送请求
-          echo "Pinging sensor data endpoint..."
-          curl -s -o /dev/null -w "%{http_code}" "$REPLIT_URL/api/sensor-data"
-          
-          # 向历史数据端点发送请求
-          echo "Pinging history data endpoint..."
-          curl -s -o /dev/null -w "%{http_code}" "$REPLIT_URL/api/history_data"
           
           echo "Ping completed successfully!"
