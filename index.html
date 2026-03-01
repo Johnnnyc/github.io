@@ -724,10 +724,13 @@
             this.reset();
         });
 
+        // 后端API地址（Replit服务器）
+        const API_URL = 'https://6be552f2-d09f-4d23-9505-58846266f57b-00-51bi4tpuumjw.sisko.replit.dev/api';
+        
         // 获取最新传感器数据
         async function refreshData() {
           try {
-            const response = await fetch('/api/sensor-data');
+            const response = await fetch(`${API_URL}/sensor-data`);
             const data = await response.json();
             document.getElementById('temperature').textContent = (data.temperature || '--') + ' °C';
             document.getElementById('humidity').textContent = (data.humidity || '--') + ' %';
@@ -740,7 +743,7 @@
 
         async function getSensorData() {
           try {
-            const response = await fetch('/api/get-sensor-data', { method: 'POST' });
+            const response = await fetch(`${API_URL}/get-sensor-data`, { method: 'POST' });
             const data = await response.json();
             alert(data.message);
             setTimeout(refreshData, 2000);
