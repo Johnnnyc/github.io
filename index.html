@@ -724,8 +724,8 @@
             this.reset();
         });
 
-        // 后端API地址（Replit服务器）
-        const API_URL = 'https://6be552f2-d09f-4d23-9505-58846266f57b-00-51bi4tpuumjw.sisko.replit.dev/api';
+        // 后端API地址（Replit服务器，包含端口3000）
+        const API_URL = 'https://6be552f2-d09f-4d23-9505-58846266f57b-00-51bi4tpuumjw.sisko.replit.dev:3000/api';
         
         // 获取最新传感器数据
         async function refreshData() {
@@ -755,7 +755,7 @@
 
         // 自动刷新
         refreshData();
-        setInterval(refreshData, 30000);
+        setInterval(refreshData, 10000);
     </script>
 </body>
 </html>

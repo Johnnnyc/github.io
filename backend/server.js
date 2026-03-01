@@ -151,11 +151,12 @@ function sendGetSensorData() {
   }
 }
 
-// 连接MQTT
-connectMQTT();
-
-// 每5分钟发送一次获取温湿度命令
-setInterval(sendGetSensorData, 5 * 60 * 1000);
+// 延迟连接MQTT，确保服务器先启动
+setTimeout(() => {
+  connectMQTT();
+  // 每5分钟发送一次获取温湿度命令
+  setInterval(sendGetSensorData, 5 * 60 * 1000);
+}, 2000);
 
 // API接口
 
@@ -254,6 +255,34 @@ app.get('/health', (req, res) => {
 });
 
 // 启动服务器
-app.listen(port, () => {
+const server = app.listen(port, () => {
+  console.log('========================================');
   console.log(`服务器运行在端口 ${port}`);
+  console.log(`服务器地址: http://localhost:${port}`);
+  console.log(`健康检查: http://localhost:${port}/health`);
+  console.log(`API端点: http://localhost:${port}/api/sensor-data`);
+  console.log('========================================');
+});
+
+// 服务器错误处理
+server.on('error', (error) => {
+  console.error('========================================');
+  console.error('服务器错误:', error);
+  console.error('========================================');
+  if (error.code === 'EADDRINUSE') {
+    console.error(`端口 ${port} 已被占用`);
+  }
+});
+
+// 全局错误处理
+process.on('uncaughtException', (error) => {
+  console.error('========================================');
+  console.error('未捕获的异常:', error);
+  console.error('========================================');
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('========================================');
+  console.error('未处理的拒绝:', reason);
+  console.error('========================================');
 });

@@ -1,4 +1,4 @@
-modules = ["nodejs-20", "web", "nix"]
+modules = ["nodejs-18", "web", "nix"]
 [packager]
 language = "nodejs"
 
@@ -11,6 +11,11 @@ run = ["sh", "-c", "cd backend && npm install && node server.js"]
 
 [env]
 NODE_ENV = "production"
+PORT = "3000"
 
 [nix]
 channel = "stable-25_05"
+
+[web]
+port = 3000
+expose = true
