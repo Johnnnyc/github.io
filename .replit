@@ -7,11 +7,17 @@ pattern = "**/*.js"
 syntax = "javascript"
 
 [deployment]
-run = ["sh", "-c", "cd backend && npm install && node server.js"]
+run = ["bash", "-c", "cd backend && npm install && node server.js"]
+
+[web]
+port = 3000
+expose = true
 
 [env]
 NODE_ENV = "production"
 PORT = "3000"
+# 防止Replit应用休眠的设置
+ALWAYS_ON = "true"
 
 [nix]
 channel = "stable-25_05"
