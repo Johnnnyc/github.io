@@ -24,8 +24,8 @@ const App: React.FC = () => {
     datetime: null as string | null
   });
   
-  // 后端API地址（Replit服务器）
-  const API_URL = 'https://githubio-425512895.replit.app/api';
+  // 后端API地址（相对路径）
+  const API_URL = '/api';
   
   // 获取最新传感器数据
   const fetchSensorData = async () => {
