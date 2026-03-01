@@ -1,6 +1,26 @@
 import express from 'express';
 import cors from 'cors';
 import mqtt from 'mqtt';
+import http from 'http';
+
+// Firebase配置
+const firebaseConfig = {
+  apiKey: "AIzaSyD_QorWShFv5BeS4j4VSJoh2mCxyvgJ68Y",
+  authDomain: "esp32-sensor-data-ed101.firebaseapp.com",
+  databaseURL: "https://esp32-sensor-data-ed101-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "esp32-sensor-data-ed101",
+  storageBucket: "esp32-sensor-data-ed101.appspot.com",
+  messagingSenderId: "704351048238",
+  appId: "1:704351048238:web:f5b5c2728b7af9ea9145bf",
+  measurementId: "G-GRG73670NC"
+};
+
+// 初始化Firebase
+import { initializeApp } from 'firebase/app';
+import { getDatabase, ref, set } from 'firebase/database';
+
+const firebaseApp = initializeApp(firebaseConfig);
+const database = getDatabase(firebaseApp);
 
 // 初始化Express服务器
 const app = express();
@@ -130,6 +150,15 @@ function handleSensorData(data) {
         sensorDataHistory.shift();
       }
       
+      // 存储数据到Firebase
+      set(ref(database, 'sensor-data/' + timestamp), sensorDataWithTimestamp)
+        .then(() => {
+          console.log('数据存储到Firebase成功');
+        })
+        .catch((error) => {
+          console.error('数据存储到Firebase失败:', error);
+        });
+      
       console.log('数据存储到内存成功');
     }
   } catch (error) {
@@ -156,6 +185,32 @@ setTimeout(() => {
   connectMQTT();
   // 每5分钟发送一次获取温湿度命令
   setInterval(sendGetSensorData, 5 * 60 * 1000);
+  
+  // 定期自我ping，保持Replit应用活跃
+  setInterval(() => {
+    const options = {
+      hostname: 'localhost',
+      port: port,
+      path: '/health',
+      method: 'GET'
+    };
+    
+    const req = http.request(options, (res) => {
+      let data = '';
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+      res.on('end', () => {
+        console.log('自我ping成功:', data);
+      });
+    });
+    
+    req.on('error', (error) => {
+      console.error('自我ping失败:', error);
+    });
+    
+    req.end();
+  }, 4 * 60 * 1000); // 每4分钟ping一次，比UptimeRobot的5分钟频率稍高
 }, 2000);
 
 // API接口
@@ -247,6 +302,14 @@ app.get('/api/sensor-data', (req, res) => {
 app.post('/api/get-sensor-data', (req, res) => {
   sendGetSensorData();
   res.json({ message: '获取温湿度命令已发送' });
+});
+
+// 获取历史传感器数据（最多50条）
+app.get('/api/history-data', (req, res) => {
+  // 按时间戳排序，获取最近50条数据
+  const sortedData = [...sensorDataHistory].sort((a, b) => b.timestamp - a.timestamp);
+  const recentData = sortedData.slice(0, 50).reverse(); // 反转数组，使时间戳从小到大
+  res.json(recentData);
 });
 
 // 健康检查路由

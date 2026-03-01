@@ -1,4 +1,4 @@
-modules = ["nodejs-18", "web", "nix"]
+modules = ["nodejs-20", "web", "nix"]
 [packager]
 language = "nodejs"
 
@@ -9,19 +9,62 @@ syntax = "javascript"
 [deployment]
 run = ["bash", "-c", "cd backend && npm install && node server.js"]
 
-[web]
-port = 3000
-expose = true
-
 [env]
 NODE_ENV = "production"
-PORT = "3000"
-# 防止Replit应用休眠的设置
 ALWAYS_ON = "true"
 
 [nix]
 channel = "stable-25_05"
 
-[web]
-port = 3000
-expose = true
+[agent]
+expertMode = true
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Start application"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Start Backend"
+
+[[workflows.workflow]]
+name = "Start application"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "NODE_ENV=development npm run dev"
+waitForPort = 5000
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[workflows.workflow]]
+name = "Start Backend"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd backend && node server.js"
+waitForPort = 3000
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[ports]]
+localPort = 3000
+externalPort = 3000
+
+[[ports]]
+localPort = 5000
+
+[[ports]]
+localPort = 5001
