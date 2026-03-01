@@ -763,7 +763,8 @@
         // 获取最新传感器数据
         async function refreshData() {
           try {
-            const response = await fetch(`${API_URL}/sensor-data`);
+            const response = await fetchWithRetry(`${API_URL}/sensor-data`);
+            
             const data = await response.json();
             document.getElementById('temperature').textContent = (data.temperature || '--') + ' °C';
             document.getElementById('humidity').textContent = (data.humidity || '--') + ' %';
@@ -776,19 +777,23 @@
             console.error('获取数据失败:', error);
             // 即使获取数据失败，也更新最后更新时间
             document.getElementById('last-ping-time').textContent = new Date().toLocaleString();
-            alert('获取数据失败，请检查连接');
+            // 显示友好的错误信息
+            document.getElementById('temperature').textContent = '-- °C';
+            document.getElementById('humidity').textContent = '-- %';
+            document.getElementById('update-time').textContent = '数据获取失败';
           }
         }
 
         async function getSensorData() {
           try {
-            const response = await fetch(`${API_URL}/get-sensor-data`, { method: 'POST' });
+            const response = await fetchWithRetry(`${API_URL}/get-sensor-data`, { method: 'POST' });
+            
             const data = await response.json();
             alert(data.message);
             setTimeout(refreshData, 2000);
           } catch (error) {
             console.error('发送命令失败:', error);
-            alert('发送命令失败');
+            alert('发送命令失败，请检查服务器连接');
           }
         }
 
@@ -798,11 +803,31 @@
         
 
 
+        // 带重试机制的fetch函数
+        async function fetchWithRetry(url, options = {}, retries = 3, delay = 1000) {
+            try {
+                const response = await fetch(url, options);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response;
+            } catch (error) {
+                if (retries > 0) {
+                    console.log(`请求失败，${retries}次重试剩余...`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    return fetchWithRetry(url, options, retries - 1, delay * 2);
+                }
+                throw error;
+            }
+        }
+
         // 绘制传感器数据图表
         async function drawSensorChart() {
             try {
-                // 从API获取历史数据
-                const response = await fetch(`${API_URL}/history-data`);
+                // 从API获取历史数据，带重试机制
+                const response = await fetchWithRetry(`${API_URL}/history-data`);
+                
+                // 尝试解析JSON
                 const data = await response.json();
                 const timestamps = [];
                 const temperatures = [];
@@ -870,6 +895,61 @@
                 });
             } catch (error) {
                 console.error('获取历史数据失败:', error);
+                // 显示错误信息
+                const ctx = document.getElementById('sensorChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [
+                            {
+                                label: '温度 (°C)',
+                                data: [],
+                                borderColor: 'rgb(255, 99, 132)',
+                                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                borderWidth: 2,
+                                tension: 0.4
+                            },
+                            {
+                                label: '湿度 (%)',
+                                data: [],
+                                borderColor: 'rgb(54, 162, 235)',
+                                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                                borderWidth: 2,
+                                tension: 0.4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: false
+                            }
+                        },
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: '温湿度变化趋势',
+                                font: {
+                                    size: 16
+                                }
+                            },
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    afterTitle: function() {
+                                        return '历史数据获取失败，请稍后再试';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
             }
         }
         
