@@ -312,6 +312,14 @@ app.get('/api/history-data', (req, res) => {
   res.json(recentData);
 });
 
+// 为了兼容前端可能的请求，添加下划线版本的路由
+app.get('/api/history_data', (req, res) => {
+  // 按时间戳排序，获取最近50条数据
+  const sortedData = [...sensorDataHistory].sort((a, b) => b.timestamp - a.timestamp);
+  const recentData = sortedData.slice(0, 50).reverse(); // 反转数组，使时间戳从小到大
+  res.json(recentData);
+});
+
 // 健康检查路由
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
