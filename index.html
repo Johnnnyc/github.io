@@ -753,8 +753,10 @@
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
-        // 后端API地址（Replit服务器，包含端口3000）
-        const API_URL = 'https://6be552f2-d09f-4d23-9505-58846266f57b-00-51bi4tpuumjw.sisko.replit.dev:3000/api';
+        // 后端API地址
+        // 本地开发环境使用本地API，生产环境使用Replit API
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const API_URL = isLocal ? 'http://localhost:3000/api' : 'https://6be552f2-d09f-4d23-9505-58846266f57b-00-51bi4tpuumjw.sisko.replit.dev:3000/api';
         
         // 获取最新传感器数据
         async function refreshData() {
