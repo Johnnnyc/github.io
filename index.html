@@ -825,7 +825,7 @@
         async function drawSensorChart() {
             try {
                 // 从API获取历史数据，带重试机制
-                const response = await fetchWithRetry(`${API_URL}/history-data`);
+                const response = await fetchWithRetry(`${API_URL}/history_data`);
                 
                 // 尝试解析JSON
                 const data = await response.json();
