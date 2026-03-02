@@ -755,11 +755,13 @@
             this.reset();
         });
 
-        // MQTT配置（使用公共broker测试）
+        // MQTT配置（使用真实参数）
         const mqttConfig = {
-            broker: 'wss://broker.hivemq.com:8884', // 公共MQTT broker
+            broker: 'wss://z6fc98e1.ala.cn-hangzhou.emqxsl.cn:8883', // MQTT broker地址
             clientId: 'frontend-' + Math.random().toString(16).substr(2, 8),
-            topic: 'esp32/sensor/data' // MQTT主题
+            username: 'Johnney',
+            password: 'Zq??900725',
+            topic: 'esp32/topic' // MQTT主题
         };
         
         // Firebase配置（使用真实参数）
@@ -785,6 +787,8 @@
             try {
                 mqttClient = mqtt.connect(mqttConfig.broker, {
                     clientId: mqttConfig.clientId,
+                    username: mqttConfig.username,
+                    password: mqttConfig.password,
                     clean: true,
                     keepalive: 60
                 });
