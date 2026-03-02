@@ -1126,6 +1126,12 @@
             
             // 初始刷新数据
             refreshData();
+            
+            // 每3分钟自动刷新数据
+            setInterval(() => {
+                console.log('自动刷新数据...');
+                refreshData();
+            }, 3 * 60 * 1000); // 3分钟
         });
         
 
