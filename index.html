@@ -755,22 +755,25 @@
             this.reset();
         });
 
-        // MQTT配置
+        // MQTT配置（使用真实参数）
         const mqttConfig = {
-            broker: 'wss://broker.hivemq.com:8884', // MQTT broker地址
+            broker: 'wss://z6fc98e1.ala.cn-hangzhou.emqxsl.cn:8883', // MQTT broker地址
             clientId: 'frontend-' + Math.random().toString(16).substr(2, 8),
-            topic: 'esp32/sensor/data' // MQTT主题
+            username: 'Johnney',
+            password: 'Zq??900725',
+            topic: 'esp32/topic' // MQTT主题
         };
         
-        // Firebase配置
+        // Firebase配置（使用真实参数）
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
+            apiKey: "AIzaSyD_QorWShFv5BeS4j4VSJoh2mCxyvgJ68Y",
+            authDomain: "esp32-sensor-data-ed101.firebaseapp.com",
+            databaseURL: "https://esp32-sensor-data-ed101-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "esp32-sensor-data-ed101",
+            storageBucket: "esp32-sensor-data-ed101.appspot.com",
+            messagingSenderId: "704351048238",
+            appId: "1:704351048238:web:f5b5c2728b7af9ea9145bf",
+            measurementId: "G-GRG73670NC"
         };
         
         // 本地数据存储
@@ -782,7 +785,11 @@
         function connectMQTT() {
             try {
                 mqttClient = mqtt.connect(mqttConfig.broker, {
-                    clientId: mqttConfig.clientId
+                    clientId: mqttConfig.clientId,
+                    username: mqttConfig.username,
+                    password: mqttConfig.password,
+                    clean: true,
+                    keepalive: 60
                 });
                 
                 mqttClient.on('connect', () => {
