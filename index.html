@@ -756,9 +756,9 @@
         });
 
         // 后端API地址
-        // 本地开发环境使用本地API，生产环境使用Replit API
+        // 本地开发环境使用本地API，生产环境使用阿里云ECS API
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        const API_URL = isLocal ? 'http://localhost:3000/api' : 'https://6be552f2-d09f-4d23-9505-58846266f57b-00-51bi4tpuumjw.sisko.replit.dev:3000/api';
+        const API_URL = isLocal ? 'http://localhost:3000/api' : 'http://120.26.113.187:3000/api';
         
         // 获取最新传感器数据
         async function refreshData() {
