@@ -757,7 +757,8 @@
 
         // MQTT配置（使用真实参数）
         const mqttConfig = {
-            broker: 'wss://z6fc98e1.ala.cn-hangzhou.emqxsl.cn:8883', // MQTT broker地址
+            broker: 'mqtt://z6fc98e1.ala.cn-hangzhou.emqxsl.cn', // MQTT broker地址
+            port: 8883, // MQTT端口
             clientId: 'frontend-' + Math.random().toString(16).substr(2, 8),
             username: 'Johnney',
             password: 'Zq??900725',
@@ -780,11 +781,13 @@
         const STORAGE_KEY = 'sensor_data_history';
         let mqttClient = null;
         let database = null;
+        let sensorChart = null;
         
         // 连接到MQTT broker
         function connectMQTT() {
             try {
-                mqttClient = mqtt.connect(mqttConfig.broker, {
+                const brokerUrl = `${mqttConfig.broker}:${mqttConfig.port}`;
+                mqttClient = mqtt.connect(brokerUrl, {
                     clientId: mqttConfig.clientId,
                     username: mqttConfig.username,
                     password: mqttConfig.password,
@@ -969,9 +972,14 @@
                     });
                 }
                 
+                // 销毁旧图表
+                if (sensorChart) {
+                    sensorChart.destroy();
+                }
+                
                 // 绘制图表
                 const ctx = document.getElementById('sensorChart').getContext('2d');
-                new Chart(ctx, {
+                sensorChart = new Chart(ctx, {
                     type: 'line',
                     data: {
                         labels: timestamps,
@@ -1019,9 +1027,13 @@
                 });
             } catch (error) {
                 console.error('绘制图表失败:', error);
+                // 销毁旧图表
+                if (sensorChart) {
+                    sensorChart.destroy();
+                }
                 // 显示错误信息
                 const ctx = document.getElementById('sensorChart').getContext('2d');
-                new Chart(ctx, {
+                sensorChart = new Chart(ctx, {
                     type: 'line',
                     data: {
                         labels: [],
