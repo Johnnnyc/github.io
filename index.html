@@ -599,9 +599,11 @@
                     </div>
                 </div>
             </div>
+            <!-- 屏蔽按钮部分 -->
             <!-- <div style="text-align: center; margin-top: 20px;">
                 <button class="btn btn-primary" onclick="refreshData()">🔄 刷新数据</button>
                 <button class="btn btn-secondary" onclick="getSensorData()" style="margin-left: 10px;">📡 获取传感器数据</button>
+                <button class="btn btn-secondary" onclick="testMQTTConnection()" style="margin-left: 10px;">🔌 测试MQTT连接</button>
             </div> -->
         </div>
     </section>
@@ -757,7 +759,7 @@
 
         // MQTT配置（使用真实参数）
         const mqttConfig = {
-            broker: 'wss://z6fc98e1.ala.cn-hangzhou.emqxsl.cn:8084/mqtt', // WebSocket端点，添加/mqtt路径
+            broker: 'wss://z6fc98e1.ala.cn-hangzhou.emqxsl.cn:8084/mqtt', // 使用WebSocket over TLS端口
             clientId: 'frontend-' + Math.random().toString(16).substr(2, 8),
             username: 'Johnney',
             password: 'Zq??900725',
@@ -786,6 +788,10 @@
         function connectMQTT() {
             try {
                 console.log('正在连接到MQTT broker:', mqttConfig.broker);
+                console.log('MQTT客户端ID:', mqttConfig.clientId);
+                console.log('MQTT用户名:', mqttConfig.username);
+                console.log('订阅主题:', mqttConfig.topic);
+                
                 mqttClient = mqtt.connect(mqttConfig.broker, {
                     clientId: mqttConfig.clientId,
                     username: mqttConfig.username,
@@ -796,24 +802,36 @@
                     connectTimeout: 30000
                 });
                 
-                mqttClient.on('connect', () => {
-                    console.log('Connected to MQTT broker');
-                    mqttClient.subscribe(mqttConfig.topic, (err) => {
+                mqttClient.on('connect', (connack) => {
+                    console.log('Connected to MQTT broker:', connack);
+                    mqttClient.subscribe(mqttConfig.topic, (err, granted) => {
                         if (err) {
                             console.error('订阅主题失败:', err);
                         } else {
-                            console.log('订阅主题成功:', mqttConfig.topic);
+                            console.log('订阅主题成功:', granted);
                         }
                     });
                 });
                 
-                mqttClient.on('message', (topic, message) => {
+                mqttClient.on('message', (topic, message, packet) => {
                     try {
-                        const data = JSON.parse(message.toString());
-                        console.log('Received MQTT message:', data);
+                        const messageStr = message.toString();
+                        console.log('Received MQTT message - Topic:', topic);
+                        console.log('Received MQTT message - Payload:', messageStr);
+                        console.log('Received MQTT message - Packet:', packet);
+                        
+                        // 过滤掉自己发送的命令消息
+                        if (messageStr === '获取温湿度') {
+                            console.log('忽略自己发送的命令消息');
+                            return;
+                        }
+                        
+                        const data = JSON.parse(messageStr);
+                        console.log('Parsed MQTT message:', data);
                         processSensorData(data);
                     } catch (error) {
                         console.error('Error parsing MQTT message:', error);
+                        console.error('Raw message:', message.toString());
                     }
                 });
                 
@@ -828,6 +846,14 @@
                 mqttClient.on('close', () => {
                     console.log('MQTT连接关闭');
                 });
+                
+                mqttClient.on('offline', () => {
+                    console.log('MQTT客户端离线');
+                });
+                
+                mqttClient.on('end', () => {
+                    console.log('MQTT连接结束');
+                });
             } catch (error) {
                 console.error('Failed to connect to MQTT broker:', error);
             }
@@ -837,7 +863,7 @@
         function processSensorData(data) {
             try {
                 // 确保数据格式正确
-                if (!data.temperature || !data.humidity) {
+                if (data.temperature === undefined || data.humidity === undefined) {
                     console.error('Invalid sensor data format');
                     return;
                 }
@@ -949,8 +975,15 @@
         // 刷新传感器数据（手动触发）
         function refreshData() {
             try {
+                console.log('刷新温湿度数据...');
                 // 从Firebase获取最新数据
                 getFromFirebase();
+                
+                // 发送MQTT消息请求温湿度数据（如果设备支持）
+                if (mqttClient && mqttClient.connected) {
+                    mqttClient.publish('esp32/topic', '获取温湿度'); // 发送获取温湿度命令
+                    console.log('已发送温湿度数据请求');
+                }
                 
                 // 更新最后更新时间
                 const currentTime = new Date().toLocaleString();
@@ -978,7 +1011,7 @@
                 // 处理数据
                 if (history && history.length > 0) {
                     history.forEach((item) => {
-                        if (item.timestamp && item.temperature && item.humidity) {
+                        if (item.timestamp !== undefined && item.temperature !== undefined && item.humidity !== undefined) {
                             const date = new Date(item.timestamp);
                             timestamps.push(date.toLocaleString());
                             temperatures.push(item.temperature);
@@ -1134,6 +1167,44 @@
             }, 3 * 60 * 1000); // 3分钟
         });
         
+        // 测试MQTT连接
+        function testMQTTConnection() {
+            try {
+                if (mqttClient && mqttClient.connected) {
+                    console.log('MQTT连接状态: 已连接');
+                    alert('MQTT连接状态: 已连接');
+                } else {
+                    console.log('MQTT连接状态: 未连接');
+                    alert('MQTT连接状态: 未连接，正在尝试重连...');
+                    connectMQTT();
+                }
+            } catch (error) {
+                console.error('测试MQTT连接失败:', error);
+                alert('测试MQTT连接失败: ' + error.message);
+            }
+        }
+        
+        // 获取传感器数据（手动触发）
+        function getSensorData() {
+            try {
+                console.log('手动获取温湿度数据...');
+                // 从Firebase获取最新数据
+                getFromFirebase();
+                
+                // 发送MQTT消息请求温湿度数据（如果设备支持）
+                if (mqttClient && mqttClient.connected) {
+                    mqttClient.publish('esp32/topic', '获取温湿度'); // 发送获取温湿度命令
+                    console.log('已发送温湿度数据请求');
+                }
+                
+                // 更新最后更新时间
+                const currentTime = new Date().toLocaleString();
+                document.getElementById('last-ping-time').textContent = currentTime;
+            } catch (error) {
+                console.error('获取温湿度数据失败:', error);
+                alert('获取温湿度数据失败: ' + error.message);
+            }
+        }
 
     </script>
 </body>
