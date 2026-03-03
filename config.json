@@ -1,0 +1,18 @@
+{
+  "wifi": {
+    "ssid": "你的WiFi名称",
+    "password": "你的WiFi密码"
+  },
+  "firebase": {
+    "host": "esp32-sensor-data-ed101-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "auth": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCi3HJ1qpasP23N\n97U9rqUJ+N8xe+o4cfSFwnHeQjZzWDma7khIOXR7I/iDUdJwaOxhKbH0lNAqXn9q\nvtJlPXQh9o81AUpQFp0CnfK4iKAd94TNu3UmJMhjwRizG/X823YFL4naM7KgpNKc\noL1MSErGHiFHTS4X35GC8mh4rBb2K/v2LQqHDwF3tBYVX5Kkc6rkhhzKCe9JNxMr\nucCUtuu1bg3CfdgiXmLrBY23UXO+Y+6lcUiEjSH41oGLy+ZJ6n/aU+Coi87nLdOv\ngV/NvVogf+9rH7lybgeS25mHEiHdbZmC0/SCQhk0hLp0KaoW2nHqCFhX2qYtJOVz\nwfg3SGfBAgMBAAECggEAQbwyFO1kgKTfeL2tcXavFc3WpL4L5XmVhXHdDSVzne3z\n3mWkVkaejd+QfMzHYGjxVCyEsCBqv1dCHb9k48lAuT6wQehB6v6dpENFh5dZ7Y6N\nE49A80LwgVcc1ZqJGOUqB2DPRvwL8wxkGCVHEuWxDLN3ojR0UN2D+bNHWMG5SOYF\n7qRi74vVr3lFezV1IvsMgDD+uexqnB9sltFoqQNm6hA6xCaHJSxw2XfYOlyLmdLI\nFA2OAVpY6naPMEHSfyY42xNeInWsh+LRdg4zcHdsIEwipoPYHWw7e1/IAS4HMvgj\n+P8zbU2FgK3OdgNRC6r4FFZy/B8m6u8+O4E6afYkOwKBgQDXPhird9NuNIFxdzj0\nxzDITomyP3VnLqi/b1ndFtWr1fO1flsEKkM1dxZWKfLL1Q0i86ZL8DWb9hZk8gnd\nmLSBYOzOngrADeUcz0Y8AnI06uMWvPmbqOAMPt2uVJ+3hgHv6691EIZ576UC8acW\nM0LR0et8nuV3Vn/NMWgrqLG0+wKBgQDBsyfGP7cqzs3jgPpaLI8KDxpOfv6dG93x\nlP707oXtJep0BKgxoNOnc34Cil30YtlOOrAYtWq8anjAZdswUWT9MGWD4bvV8+2j\nhsm1D1p9DU/mOkXQghOQdfaFc1/dR2zBsQJrIDfKCup1L23QRfnT4us5E/X9nKPQ\n0NnOndNhcwKBgBLvFnJ27vVhzwUxLKRzpTnplrlEVcqG0zdLz0bgjFk6T97mR5Fd\nOl5IpIFd3UrK6gXqEvXZIo4enqewlueUWESNRyeBxYZRcpcPMKl0uaEoDGPiqb5k\no5jQKuX78bTOJ/t36w5MLtgpGYXhxgXw6m7UnXdv7tWJmWJudzBn/YHjAoGAI6+I\nAmQ2sLJNCD744KgY6jeCFzgaXIOHzjwvBJz1G43CtgEto4cHt2/1pS4sxRt5AYqa\natLxiSjsejXJvgsg2eySp0ttOauo+lmYy7y6ZROQxs+xkQqF5DV3Z3qsDK5eAQlF\ncssKvDRqoZBNYPOjZUAHKgrdZQ34uD3iAsjc6rUCgYEAmcOf//de1fSZf0zQ/par\nQxDly5lKA8/Z6wIP0aopGHgwz4h97CH0W1GcJ11JrIbq2yp8qwmKZpfHHSR5zMiS\nmeq9yHb7e797T3mfDpJJYfpvFf2O8xdD/zV0XiCBR0cUJUdlPC3v3wOulmJWXXk4\n7uP6MbZ5yZZkSddCIL1r3pY=\n-----END PRIVATE KEY-----\n"
+  },
+  "sensor": {
+    "pin": 4,
+    "type": "DHT22"
+  },
+  "upload": {
+    "interval": 5000,
+    "path": "sensor-data"
+  }
+}

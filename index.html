@@ -798,8 +798,8 @@
                     password: mqttConfig.password,
                     clean: true,
                     keepalive: 60,
-                    reconnectPeriod: 5000,
-                    connectTimeout: 30000
+                    reconnectPeriod: 3000,
+                    connectTimeout: 6000
                 });
                 
                 mqttClient.on('connect', (connack) => {
@@ -809,6 +809,7 @@
                             console.error('订阅主题失败:', err);
                         } else {
                             console.log('订阅主题成功:', granted);
+                            
                         }
                     });
                 });
@@ -865,6 +866,8 @@
                 // 确保数据格式正确
                 if (data.temperature === undefined || data.humidity === undefined) {
                     console.error('Invalid sensor data format');
+
+                    refreshData();
                     return;
                 }
                 
@@ -1154,17 +1157,17 @@
             // 从Firebase获取历史数据
             getFromFirebase();
             
-            // 绘制初始图表
-            drawSensorChart();
-            
             // 初始刷新数据
             refreshData();
-            
+    
+            // 绘制初始图表
+            drawSensorChart();
+        
             // 每3分钟自动刷新数据
             setInterval(() => {
                 console.log('自动刷新数据...');
                 refreshData();
-            }, 3 * 60 * 1000); // 3分钟
+            }, 1 * 60 * 1000); // 3分钟
         });
         
         // 测试MQTT连接

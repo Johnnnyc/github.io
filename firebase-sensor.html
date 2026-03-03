@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase 传感器数据</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0a0a0a;
+            color: #ffffff;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #00f0ff;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+        }
+
+        .sensor-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .sensor-card {
+            background: rgba(10, 10, 10, 0.8);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .sensor-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 240, 255, 0.2);
+            border-color: #00f0ff;
+        }
+
+        .sensor-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: #00f0ff;
+        }
+
+        .sensor-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .sensor-label {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .update-time {
+            font-size: 0.9rem;
+            color: rgba(0, 240, 255, 0.7);
+            margin-top: 10px;
+        }
+
+        .chart-container {
+            background: rgba(10, 10, 10, 0.8);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .chart-title {
+            text-align: center;
+            color: #00f0ff;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .last-update {
+            text-align: center;
+            margin-top: 20px;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+        }
+    </style>
+    <!-- Firebase SDK v8 -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Firebase 传感器数据</h1>
+        
+        <div class="sensor-grid">
+            <div class="sensor-card">
+                <div class="sensor-icon">
+                    <i class="fas fa-temperature-high"></i>
+                </div>
+                <div class="sensor-value" id="temperature">-- °C</div>
+                <div class="sensor-label">温度</div>
+                <div class="update-time" id="temp-update-time">更新时间: --</div>
+            </div>
+            
+            <div class="sensor-card">
+                <div class="sensor-icon">
+                    <i class="fas fa-tint"></i>
+                </div>
+                <div class="sensor-value" id="humidity">-- %</div>
+                <div class="sensor-label">湿度</div>
+                <div class="update-time" id="humid-update-time">更新时间: --</div>
+            </div>
+            
+            <div class="sensor-card">
+                <div class="sensor-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="sensor-value" id="last-update">--</div>
+                <div class="sensor-label">最后更新</div>
+                <div class="update-time">实时更新</div>
+            </div>
+        </div>
+        
+        <div class="chart-container">
+            <div class="chart-title">温湿度变化趋势</div>
+            <div style="height: 400px;">
+                <canvas id="sensorChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="last-update">
+            数据来源: Firebase 实时数据库
+        </div>
+    </div>
+
+    <script>
+        // Firebase配置
+        const firebaseConfig = {
+            apiKey: "AIzaSyD_QorWShFv5BeS4j4VSJoh2mCxyvgJ68Y",
+            authDomain: "esp32-sensor-data-ed101.firebaseapp.com",
+            databaseURL: "https://esp32-sensor-data-ed101-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "esp32-sensor-data-ed101",
+            storageBucket: "esp32-sensor-data-ed101.appspot.com",
+            messagingSenderId: "704351048238",
+            appId: "1:704351048238:web:f5b5c2728b7af9ea9145bf",
+            measurementId: "G-GRG73670NC"
+        };
+        
+        // 初始化Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        
+        let sensorChart = null;
+        
+        // 从Firebase获取最新数据
+        function getLatestData() {
+            try {
+                // 获取最新的一条数据
+                database.ref('sensor-data').orderByChild('timestamp').limitToLast(1).once('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        // 转换为数组并获取最后一条
+                        const latestData = Object.values(data)[0];
+                        updateUI(latestData);
+                    }
+                });
+            } catch (error) {
+                console.error('获取最新数据失败:', error);
+            }
+        }
+        
+        // 从Firebase获取历史数据
+        function getHistoryData() {
+            try {
+                database.ref('sensor-data').orderByChild('timestamp').limitToLast(50).once('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        // 转换为数组
+                        const history = Object.values(data);
+                        // 按时间戳排序
+                        history.sort((a, b) => a.timestamp - b.timestamp);
+                        // 更新图表
+                        drawSensorChart(history);
+                    }
+                });
+            } catch (error) {
+                console.error('获取历史数据失败:', error);
+            }
+        }
+        
+        // 更新UI
+        function updateUI(data) {
+            try {
+                if (data.temperature !== undefined) {
+                    document.getElementById('temperature').textContent = data.temperature + ' °C';
+                    document.getElementById('temp-update-time').textContent = '更新时间: ' + data.datetime;
+                }
+                
+                if (data.humidity !== undefined) {
+                    document.getElementById('humidity').textContent = data.humidity + ' %';
+                    document.getElementById('humid-update-time').textContent = '更新时间: ' + data.datetime;
+                }
+                
+                document.getElementById('last-update').textContent = data.datetime;
+            } catch (error) {
+                console.error('更新UI失败:', error);
+            }
+        }
+        
+        // 绘制传感器数据图表
+        function drawSensorChart(history) {
+            try {
+                const timestamps = [];
+                const temperatures = [];
+                const humidities = [];
+                
+                // 处理数据
+                if (history && history.length > 0) {
+                    history.forEach((item) => {
+                        if (item.timestamp !== undefined && item.temperature !== undefined && item.humidity !== undefined) {
+                            const date = new Date(item.timestamp);
+                            timestamps.push(date.toLocaleString());
+                            temperatures.push(item.temperature);
+                            humidities.push(item.humidity);
+                        }
+                    });
+                }
+                
+                // 销毁旧图表
+                if (sensorChart) {
+                    sensorChart.destroy();
+                }
+                
+                // 绘制图表
+                const ctx = document.getElementById('sensorChart').getContext('2d');
+                sensorChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: timestamps,
+                        datasets: [
+                            {
+                                label: '温度 (°C)',
+                                data: temperatures,
+                                borderColor: 'rgb(255, 99, 132)',
+                                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                borderWidth: 2,
+                                tension: 0.4
+                            },
+                            {
+                                label: '湿度 (%)',
+                                data: humidities,
+                                borderColor: 'rgb(54, 162, 235)',
+                                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                                borderWidth: 2,
+                                tension: 0.4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: false
+                            }
+                        },
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: '温湿度变化趋势',
+                                font: {
+                                    size: 16
+                                }
+                            },
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('绘制图表失败:', error);
+            }
+        }
+        
+        // 监听Firebase数据变化
+        function listenForDataChanges() {
+            try {
+                // 监听数据变化
+                database.ref('sensor-data').orderByChild('timestamp').limitToLast(1).on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        const latestData = Object.values(data)[0];
+                        updateUI(latestData);
+                    }
+                });
+            } catch (error) {
+                console.error('监听数据变化失败:', error);
+            }
+        }
+        
+        // 页面加载完成后初始化
+        window.addEventListener('load', () => {
+            console.log('页面加载完成，初始化数据...');
+            
+            // 获取最新数据
+            getLatestData();
+            
+            // 获取历史数据
+            getHistoryData();
+            
+            // 监听数据变化
+            listenForDataChanges();
+            
+            // 每30秒刷新一次数据
+            setInterval(() => {
+                console.log('自动刷新数据...');
+                getLatestData();
+                getHistoryData();
+            }, 30 * 1000);
+        });
+    </script>
+</body>
+</html>
