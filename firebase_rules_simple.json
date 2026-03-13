@@ -1,0 +1,16 @@
+{
+  "rules": {
+    "sensor-data": {
+      ".read": true,
+      ".write": true,
+      "$sensorId": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    "$other": {
+      ".read": true,
+      ".write": true
+    }
+  }
+}

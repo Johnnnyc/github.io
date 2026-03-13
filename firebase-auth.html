@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase 认证与传感器数据</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0a0a0a;
+            color: #ffffff;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #00f0ff;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+        }
+
+        .auth-container {
+            background: rgba(10, 10, 10, 0.8);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            border-radius: 10px;
+            padding: 30px;
+            max-width: 400px;
+            margin: 0 auto 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .sensor-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .sensor-card {
+            background: rgba(10, 10, 10, 0.8);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .sensor-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 240, 255, 0.2);
+            border-color: #00f0ff;
+        }
+
+        .sensor-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: #00f0ff;
+        }
+
+        .sensor-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .sensor-label {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .update-time {
+            font-size: 0.9rem;
+            color: rgba(0, 240, 255, 0.7);
+            margin-top: 10px;
+        }
+
+        .chart-container {
+            background: rgba(10, 10, 10, 0.8);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .chart-title {
+            text-align: center;
+            color: #00f0ff;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .last-update {
+            text-align: center;
+            margin-top: 20px;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #00f0ff;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            border-radius: 5px;
+            color: #ffffff;
+            font-size: 1rem;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #00f0ff;
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(45deg, #00f0ff, #0080ff);
+            color: #0a0a0a;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 240, 255, 0.3);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #00f0ff;
+            border: 1px solid #00f0ff;
+            margin-top: 10px;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(0, 240, 255, 0.1);
+        }
+
+        .user-info {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #00f0ff;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+    <!-- Firebase SDK v8 -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Firebase 认证与传感器数据</h1>
+        
+        <!-- 认证容器 -->
+        <div id="auth-container" class="auth-container">
+            <h2 style="text-align: center; color: #00f0ff; margin-bottom: 20px;">用户登录</h2>
+            
+            <div id="login-form">
+                <div class="form-group">
+                    <label for="email">邮箱</label>
+                    <input type="email" id="email" placeholder="请输入邮箱">
+                </div>
+                <div class="form-group">
+                    <label for="password">密码</label>
+                    <input type="password" id="password" placeholder="请输入密码">
+                </div>
+                <button class="btn" onclick="login()">登录</button>
+                <button class="btn btn-secondary" onclick="toggleForm()">注册新账号</button>
+            </div>
+            
+            <div id="register-form" class="hidden">
+                <div class="form-group">
+                    <label for="reg-email">邮箱</label>
+                    <input type="email" id="reg-email" placeholder="请输入邮箱">
+                </div>
+                <div class="form-group">
+                    <label for="reg-password">密码</label>
+                    <input type="password" id="reg-password" placeholder="请输入密码（至少6位）">
+                </div>
+                <button class="btn" onclick="register()">注册</button>
+                <button class="btn btn-secondary" onclick="toggleForm()">已有账号？登录</button>
+            </div>
+        </div>
+        
+        <!-- 用户信息 -->
+        <div id="user-info" class="user-info hidden">
+            <h2>欢迎，<span id="user-name"></span></h2>
+            <p>邮箱: <span id="user-email"></span></p>
+            <button class="btn" onclick="logout()" style="max-width: 200px; margin: 10px auto;">退出登录</button>
+        </div>
+        
+        <!-- 传感器数据 -->
+        <div id="sensor-container" class="hidden">
+            <div class="sensor-grid">
+                <div class="sensor-card">
+                    <div class="sensor-icon">
+                        <i class="fas fa-temperature-high"></i>
+                    </div>
+                    <div class="sensor-value" id="temperature">-- °C</div>
+                    <div class="sensor-label">温度</div>
+                    <div class="update-time" id="temp-update-time">更新时间: --</div>
+                </div>
+                
+                <div class="sensor-card">
+                    <div class="sensor-icon">
+                        <i class="fas fa-tint"></i>
+                    </div>
+                    <div class="sensor-value" id="humidity">-- %</div>
+                    <div class="sensor-label">湿度</div>
+                    <div class="update-time" id="humid-update-time">更新时间: --</div>
+                </div>
+                
+                <div class="sensor-card">
+                    <div class="sensor-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="sensor-value" id="last-update">--</div>
+                    <div class="sensor-label">最后更新</div>
+                    <div class="update-time">实时更新</div>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <div class="chart-title">温湿度变化趋势</div>
+                <div style="height: 400px;">
+                    <canvas id="sensorChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="last-update">
+                数据来源: Firebase 实时数据库
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase配置
+        const firebaseConfig = {
+            apiKey: "AIzaSyD_QorWShFv5BeS4j4VSJoh2mCxyvgJ68Y",
+            authDomain: "esp32-sensor-data-ed101.firebaseapp.com",
+            databaseURL: "https://esp32-sensor-data-ed101-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "esp32-sensor-data-ed101",
+            storageBucket: "esp32-sensor-data-ed101.appspot.com",
+            messagingSenderId: "704351048238",
+            appId: "1:704351048238:web:f5b5c2728b7af9ea9145bf",
+            measurementId: "G-GRG73670NC"
+        };
+        
+        // 初始化Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const auth = firebase.auth();
+        
+        let sensorChart = null;
+        
+        // 切换登录/注册表单
+        function toggleForm() {
+            document.getElementById('login-form').classList.toggle('hidden');
+            document.getElementById('register-form').classList.toggle('hidden');
+        }
+        
+        // 登录
+        function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            if (!email || !password) {
+                alert('请填写邮箱和密码');
+                return;
+            }
+            
+            auth.signInWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    console.log('登录成功:', userCredential.user);
+                    updateUI(userCredential.user);
+                })
+                .catch((error) => {
+                    console.error('登录失败:', error);
+                    alert('登录失败: ' + error.message);
+                });
+        }
+        
+        // 注册
+        function register() {
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-password').value;
+            
+            if (!email || !password) {
+                alert('请填写邮箱和密码');
+                return;
+            }
+            
+            if (password.length < 6) {
+                alert('密码至少需要6位');
+                return;
+            }
+            
+            auth.createUserWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    console.log('注册成功:', userCredential.user);
+                    updateUI(userCredential.user);
+                })
+                .catch((error) => {
+                    console.error('注册失败:', error);
+                    alert('注册失败: ' + error.message);
+                });
+        }
+        
+        // 退出登录
+        function logout() {
+            auth.signOut()
+                .then(() => {
+                    console.log('退出登录成功');
+                    document.getElementById('auth-container').classList.remove('hidden');
+                    document.getElementById('user-info').classList.add('hidden');
+                    document.getElementById('sensor-container').classList.add('hidden');
+                })
+                .catch((error) => {
+                    console.error('退出登录失败:', error);
+                });
+        }
+        
+        // 更新UI
+        function updateUI(user) {
+            if (user) {
+                // 显示用户信息
+                document.getElementById('user-name').textContent = user.displayName || '用户';
+                document.getElementById('user-email').textContent = user.email;
+                
+                // 隐藏认证容器，显示用户信息和传感器数据
+                document.getElementById('auth-container').classList.add('hidden');
+                document.getElementById('user-info').classList.remove('hidden');
+                document.getElementById('sensor-container').classList.remove('hidden');
+                
+                // 加载传感器数据
+                getLatestData();
+                getHistoryData();
+                listenForDataChanges();
+            }
+        }
+        
+        // 从Firebase获取最新数据
+        function getLatestData() {
+            try {
+                // 获取最新的一条数据
+                database.ref('sensor-data').orderByChild('timestamp').limitToLast(1).once('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        // 转换为数组并获取最后一条
+                        const latestData = Object.values(data)[0];
+                        updateSensorUI(latestData);
+                    }
+                });
+            } catch (error) {
+                console.error('获取最新数据失败:', error);
+            }
+        }
+        
+        // 从Firebase获取历史数据
+        function getHistoryData() {
+            try {
+                database.ref('sensor-data').orderByChild('timestamp').limitToLast(50).once('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        // 转换为数组
+                        const history = Object.values(data);
+                        // 按时间戳排序
+                        history.sort((a, b) => a.timestamp - b.timestamp);
+                        // 更新图表
+                        drawSensorChart(history);
+                    }
+                });
+            } catch (error) {
+                console.error('获取历史数据失败:', error);
+            }
+        }
+        
+        // 更新传感器UI
+        function updateSensorUI(data) {
+            try {
+                if (data.temperature !== undefined) {
+                    document.getElementById('temperature').textContent = data.temperature + ' °C';
+                    document.getElementById('temp-update-time').textContent = '更新时间: ' + data.datetime;
+                }
+                
+                if (data.humidity !== undefined) {
+                    document.getElementById('humidity').textContent = data.humidity + ' %';
+                    document.getElementById('humid-update-time').textContent = '更新时间: ' + data.datetime;
+                }
+                
+                document.getElementById('last-update').textContent = data.datetime;
+            } catch (error) {
+                console.error('更新UI失败:', error);
+            }
+        }
+        
+        // 绘制传感器数据图表
+        function drawSensorChart(history) {
+            try {
+                const timestamps = [];
+                const temperatures = [];
+                const humidities = [];
+                
+                // 处理数据
+                if (history && history.length > 0) {
+                    history.forEach((item) => {
+                        if (item.timestamp !== undefined && item.temperature !== undefined && item.humidity !== undefined) {
+                            const date = new Date(item.timestamp);
+                            timestamps.push(date.toLocaleString());
+                            temperatures.push(item.temperature);
+                            humidities.push(item.humidity);
+                        }
+                    });
+                }
+                
+                // 销毁旧图表
+                if (sensorChart) {
+                    sensorChart.destroy();
+                }
+                
+                // 绘制图表
+                const ctx = document.getElementById('sensorChart').getContext('2d');
+                sensorChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: timestamps,
+                        datasets: [
+                            {
+                                label: '温度 (°C)',
+                                data: temperatures,
+                                borderColor: 'rgb(255, 99, 132)',
+                                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                borderWidth: 2,
+                                tension: 0.4
+                            },
+                            {
+                                label: '湿度 (%)',
+                                data: humidities,
+                                borderColor: 'rgb(54, 162, 235)',
+                                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                                borderWidth: 2,
+                                tension: 0.4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: false
+                            }
+                        },
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: '温湿度变化趋势',
+                                font: {
+                                    size: 16
+                                }
+                            },
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('绘制图表失败:', error);
+            }
+        }
+        
+        // 监听Firebase数据变化
+        function listenForDataChanges() {
+            try {
+                // 监听数据变化
+                database.ref('sensor-data').orderByChild('timestamp').limitToLast(1).on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        const latestData = Object.values(data)[0];
+                        updateSensorUI(latestData);
+                    }
+                });
+            } catch (error) {
+                console.error('监听数据变化失败:', error);
+            }
+        }
+        
+        // 监听认证状态变化
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                console.log('用户已登录:', user);
+                updateUI(user);
+            } else {
+                console.log('用户未登录');
+                document.getElementById('auth-container').classList.remove('hidden');
+                document.getElementById('user-info').classList.add('hidden');
+                document.getElementById('sensor-container').classList.add('hidden');
+            }
+        });
+        
+        // 页面加载完成后初始化
+        window.addEventListener('load', () => {
+            console.log('页面加载完成');
+        });
+    </script>
+</body>
+</html>
