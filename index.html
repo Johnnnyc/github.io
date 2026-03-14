@@ -554,8 +554,11 @@
                     </div>
                 </div>
                 <div class="about-image">
-                    <div style="width: 100%; height: 400px; background: linear-gradient(45deg, #00f0ff, #0080ff); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 10rem; color: rgba(10, 10, 10, 0.8);">
-                        <i class="fas fa-code"></i>
+                    <div style="width: 100%; height: 400px; background: linear-gradient(45deg, #00f0ff, #0080ff); border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: rgba(10, 10, 10, 0.8); padding: 20px; text-align: center;">
+                        <i class="fas fa-microchip" style="font-size: 8rem; margin-bottom: 20px;"></i>
+                        <h3 style="font-size: 1.5rem; margin-bottom: 10px; color: #0a0a0a;">ESP32_MiDevice</h3>
+                        <p style="font-size: 1rem; margin-bottom: 20px;">ESP32温湿度采集与数据存储项目</p>
+                        <a href="https://github.com/Johnnnyc/ESP32_MiDevice.git" target="_blank" style="background: rgba(10, 10, 10, 0.8); color: #00f0ff; padding: 10px 20px; border-radius: 20px; text-decoration: none; font-weight: bold; transition: all 0.3s ease;">查看项目</a>
                     </div>
                 </div>
             </div>
@@ -938,6 +941,12 @@
                         history.sort((a, b) => a.timestamp - b.timestamp);
                         // 保存到本地存储
                         localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+                        // 获取最新的数据
+                        if (history.length > 0) {
+                            const latestData = history[history.length - 1];
+                            // 更新UI
+                            updateUI(latestData);
+                        }
                         // 更新图表
                         drawSensorChart();
                     }
