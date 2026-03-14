@@ -444,6 +444,22 @@
                 display: none;
             }
 
+            header {
+                padding: 0.8rem 0;
+            }
+
+            nav {
+                padding: 0 1rem;
+            }
+
+            .logo {
+                font-size: 1.2rem;
+            }
+
+            .ping-time {
+                font-size: 0.7rem;
+            }
+
             .hero h1 {
                 font-size: 2.5rem;
             }
@@ -463,6 +479,44 @@
 
             .projects-grid {
                 grid-template-columns: 1fr;
+            }
+
+            /* 图表响应式调整 */
+            #data-visualization .project-card {
+                padding: 15px;
+            }
+
+            #data-visualization .project-card h3 {
+                font-size: 1.1rem;
+                margin-bottom: 15px;
+            }
+
+            #data-visualization .project-card > div {
+                height: 300px;
+            }
+        }
+
+        /* 小屏幕设备（小于 480px） */
+        @media (max-width: 480px) {
+            .logo {
+                font-size: 1rem;
+            }
+
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .hero p {
+                font-size: 1rem;
+            }
+
+            .section-title {
+                font-size: 2rem;
+            }
+
+            /* 图表进一步调整 */
+            #data-visualization .project-card > div {
+                height: 250px;
             }
         }
 
