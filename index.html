@@ -941,6 +941,12 @@
                         history.sort((a, b) => a.timestamp - b.timestamp);
                         // 保存到本地存储
                         localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+                        // 获取最新的数据
+                        if (history.length > 0) {
+                            const latestData = history[history.length - 1];
+                            // 更新UI
+                            updateUI(latestData);
+                        }
                         // 更新图表
                         drawSensorChart();
                     }
