@@ -17,12 +17,12 @@ def initialize_firebase():
     """
     try:
         # 加载服务账号密钥文件
-        cred = credentials.Certificate("path/to/serviceAccountKey.json")
+        cred = credentials.Certificate("esp32-sensor-data-ed101-firebase-adminsdk-fbsvc-2eb6b29bcb.json")
         
         # 初始化Firebase应用
         # databaseURL是你的Firebase数据库URL
         firebase_admin.initialize_app(cred, {
-            'databaseURL': 'https://your-project-id.firebaseio.com'
+            'databaseURL': 'https://esp32-sensor-data-ed101-default-rtdb.asia-southeast1.firebasedatabase.app'
         })
         print("Firebase初始化成功")
         return True
@@ -120,6 +120,39 @@ def list_tables():
         return []
 
 
+def check_recent_data():
+    """
+    检查最近的数据
+    """
+    try:
+        # 检查data表的时间戳
+        data_ref = db.reference('data')
+        data = data_ref.get()
+        if data and 'time' in data:
+            print(f"\n=== 最新数据时间 ===")
+            print(f"data表最新时间: {data['time']}")
+        
+        # 检查sensor-data表的最新记录
+        sensor_data_ref = db.reference('sensor-data')
+        sensor_data = sensor_data_ref.get()
+        if sensor_data:
+            # 获取所有时间戳并排序
+            timestamps = list(sensor_data.keys())
+            timestamps.sort(reverse=True)
+            if timestamps:
+                latest_timestamp = timestamps[0]
+                latest_data = sensor_data[latest_timestamp]
+                print(f"\n=== sensor-data表最新记录 ===")
+                print(f"最新时间戳: {latest_timestamp}")
+                if 'datetime' in latest_data:
+                    print(f"最新日期时间: {latest_data['datetime']}")
+                if 'temperature' in latest_data:
+                    print(f"最新温度: {latest_data['temperature']}")
+                if 'humidity' in latest_data:
+                    print(f"最新湿度: {latest_data['humidity']}")
+    except Exception as e:
+        print(f"检查最近数据失败: {e}")
+
 if __name__ == "__main__":
     # 初始化Firebase
     if initialize_firebase():
@@ -133,3 +166,6 @@ if __name__ == "__main__":
         if tables:
             print(f"\n3. 显示表 '{tables[0]}' 的详细内容")
             show_specific_table(tables[0])
+        
+        # 检查最近的数据
+        check_recent_data()
