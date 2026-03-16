@@ -592,6 +592,30 @@
                 height: auto !important;
             }
         }
+        
+        /* 华为P30 Pro等中等屏幕设备（480px - 768px） */
+        @media (min-width: 481px) and (max-width: 768px) {
+            /* 图表调整 */
+            #data-visualization .project-card {
+                padding: 10px;
+                margin-bottom: 15px;
+            }
+
+            #data-visualization .project-card > div {
+                height: 200px;
+            }
+
+            #data-visualization .project-card h3 {
+                font-size: 1rem;
+                margin-bottom: 8px;
+            }
+            
+            /* 图表坐标轴和标签调整 */
+            #data-visualization canvas {
+                max-width: 100%;
+                height: auto !important;
+            }
+        }
 
         /* 滚动动画 */
         .fade-in {
