@@ -911,15 +911,6 @@
             this.reset();
         });
 
-        // MQTT配置（使用真实参数）
-        const mqttConfig = {
-            broker: 'wss://z6fc98e1.ala.cn-hangzhou.emqxsl.cn:8084/mqtt', // 使用WebSocket over TLS端口
-            clientId: 'frontend-' + Math.random().toString(16).substr(2, 8),
-            username: 'Johnney',
-            password: 'Zq??900725',
-            topic: 'esp32/topic' // MQTT主题
-        };
-        
         // Firebase配置（使用真实参数）
         const firebaseConfig = {
             apiKey: "AIzaSyD_QorWShFv5BeS4j4VSJoh2mCxyvgJ68Y",
@@ -932,87 +923,10 @@
             measurementId: "G-GRG73670NC"
         };
         
-        // 本地数据存储
-        const STORAGE_KEY = 'sensor_data_history';
-        let mqttClient = null;
+        // 全局变量
         let database = null;
         let sensorChart = null;
-        
-        // 连接到MQTT broker
-        function connectMQTT() {
-            try {
-                console.log('正在连接到MQTT broker:', mqttConfig.broker);
-                console.log('MQTT客户端ID:', mqttConfig.clientId);
-                console.log('MQTT用户名:', mqttConfig.username);
-                console.log('订阅主题:', mqttConfig.topic);
-                
-                mqttClient = mqtt.connect(mqttConfig.broker, {
-                    clientId: mqttConfig.clientId,
-                    username: mqttConfig.username,
-                    password: mqttConfig.password,
-                    clean: true,
-                    keepalive: 60,
-                    reconnectPeriod: 3000,
-                    connectTimeout: 6000
-                });
-                
-                mqttClient.on('connect', (connack) => {
-                    console.log('Connected to MQTT broker:', connack);
-                    mqttClient.subscribe(mqttConfig.topic, (err, granted) => {
-                        if (err) {
-                            console.error('订阅主题失败:', err);
-                        } else {
-                            console.log('订阅主题成功:', granted);
-                            
-                        }
-                    });
-                });
-                
-                mqttClient.on('message', (topic, message, packet) => {
-                    try {
-                        const messageStr = message.toString();
-                        console.log('Received MQTT message - Topic:', topic);
-                        console.log('Received MQTT message - Payload:', messageStr);
-                        console.log('Received MQTT message - Packet:', packet);
-                        
-                        // 过滤掉自己发送的命令消息
-                        if (messageStr === '获取温湿度') {
-                            console.log('忽略自己发送的命令消息');
-                            return;
-                        }
-                        
-                        const data = JSON.parse(messageStr);
-                        console.log('Parsed MQTT message:', data);
-                        processSensorData(data);
-                    } catch (error) {
-                        console.error('Error parsing MQTT message:', error);
-                        console.error('Raw message:', message.toString());
-                    }
-                });
-                
-                mqttClient.on('error', (error) => {
-                    console.error('MQTT error:', error);
-                });
-                
-                mqttClient.on('reconnect', () => {
-                    console.log('MQTT重连中...');
-                });
-                
-                mqttClient.on('close', () => {
-                    console.log('MQTT连接关闭');
-                });
-                
-                mqttClient.on('offline', () => {
-                    console.log('MQTT客户端离线');
-                });
-                
-                mqttClient.on('end', () => {
-                    console.log('MQTT连接结束');
-                });
-            } catch (error) {
-                console.error('Failed to connect to MQTT broker:', error);
-            }
-        }
+        let sensorDataHistory = [];
         
         // 处理传感器数据
         function processSensorData(data) {
@@ -1020,8 +934,6 @@
                 // 确保数据格式正确
                 if (data.temperature === undefined || data.humidity === undefined) {
                     console.error('Invalid sensor data format');
-
-                    refreshData();
                     return;
                 }
                 
@@ -1046,22 +958,16 @@
             }
         }
         
-        // 保存数据到localStorage
+        // 保存数据到内存
         function saveSensorData(data) {
             try {
-                // 获取现有数据
-                let history = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-                
                 // 添加新数据
-                history.push(data);
+                sensorDataHistory.push(data);
                 
                 // 只保留最近100条数据
-                if (history.length > 100) {
-                    history = history.slice(-100);
+                if (sensorDataHistory.length > 100) {
+                    sensorDataHistory = sensorDataHistory.slice(-100);
                 }
-                
-                // 保存到localStorage
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
             } catch (error) {
                 console.error('存储数据失败:', error);
             }
@@ -1090,8 +996,8 @@
                         const history = Object.values(data);
                         // 按时间戳排序
                         history.sort((a, b) => a.timestamp - b.timestamp);
-                        // 保存到本地存储
-                        localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+                        // 保存到内存
+                        sensorDataHistory = history;
                         // 获取最新的数据
                         if (history.length > 0) {
                             const latestData = history[history.length - 1];
@@ -1107,10 +1013,40 @@
             }
         }
         
+        // 实时监听Firebase数据变化
+        function listenToFirebaseChanges() {
+            try {
+                database.ref('sensor-data').on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        // 转换为数组
+                        const history = Object.values(data);
+                        // 按时间戳排序
+                        history.sort((a, b) => a.timestamp - b.timestamp);
+                        // 保存到内存
+                        sensorDataHistory = history;
+                        // 获取最新的数据
+                        if (history.length > 0) {
+                            const latestData = history[history.length - 1];
+                            // 保存到内存
+                            saveSensorData(latestData);
+                            // 更新UI
+                            updateUI(latestData);
+                            // 更新图表
+                            drawSensorChart();
+                        }
+                    }
+                });
+                console.log('开始实时监听Firebase数据变化');
+            } catch (error) {
+                console.error('Failed to listen to Firebase changes:', error);
+            }
+        }
+        
         // 获取历史数据
         function getSensorHistory() {
             try {
-                return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+                return sensorDataHistory || [];
             } catch (error) {
                 console.error('获取历史数据失败:', error);
                 return [];
@@ -1141,12 +1077,6 @@
                 console.log('刷新温湿度数据...');
                 // 从Firebase获取最新数据
                 getFromFirebase();
-                
-                // 发送MQTT消息请求温湿度数据（如果设备支持）
-                if (mqttClient && mqttClient.connected) {
-                    mqttClient.publish('esp32/topic', '获取温湿度'); // 发送获取温湿度命令
-                    console.log('已发送温湿度数据请求');
-                }
                 
                 // 更新最后更新时间
                 const currentTime = new Date().toLocaleString();
@@ -1335,11 +1265,11 @@
                 console.error('Failed to initialize Firebase:', error);
             }
             
-            // 连接MQTT
-            connectMQTT();
-            
             // 从Firebase获取历史数据
             getFromFirebase();
+            
+            // 实时监听Firebase数据变化
+            listenToFirebaseChanges();
             
             // 初始刷新数据
             refreshData();
@@ -1347,29 +1277,12 @@
             // 绘制初始图表
             drawSensorChart();
         
-            // 每3分钟自动刷新数据
+            // 每3分钟自动刷新数据（作为备份机制）
             setInterval(() => {
                 console.log('自动刷新数据...');
                 refreshData();
-            }, 1 * 60 * 1000); // 3分钟
+            }, 3 * 60 * 1000); // 3分钟
         });
-        
-        // 测试MQTT连接
-        function testMQTTConnection() {
-            try {
-                if (mqttClient && mqttClient.connected) {
-                    console.log('MQTT连接状态: 已连接');
-                    alert('MQTT连接状态: 已连接');
-                } else {
-                    console.log('MQTT连接状态: 未连接');
-                    alert('MQTT连接状态: 未连接，正在尝试重连...');
-                    connectMQTT();
-                }
-            } catch (error) {
-                console.error('测试MQTT连接失败:', error);
-                alert('测试MQTT连接失败: ' + error.message);
-            }
-        }
         
         // 获取传感器数据（手动触发）
         function getSensorData() {
@@ -1377,12 +1290,6 @@
                 console.log('手动获取温湿度数据...');
                 // 从Firebase获取最新数据
                 getFromFirebase();
-                
-                // 发送MQTT消息请求温湿度数据（如果设备支持）
-                if (mqttClient && mqttClient.connected) {
-                    mqttClient.publish('esp32/topic', '获取温湿度'); // 发送获取温湿度命令
-                    console.log('已发送温湿度数据请求');
-                }
                 
                 // 更新最后更新时间
                 const currentTime = new Date().toLocaleString();
