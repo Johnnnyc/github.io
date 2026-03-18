@@ -911,16 +911,12 @@
             this.reset();
         });
 
-        // Firebase配置（使用真实参数）
+        // Firebase配置
         const firebaseConfig = {
             apiKey: "AIzaSyD_QorWShFv5BeS4j4VSJoh2mCxyvgJ68Y",
             authDomain: "esp32-sensor-data-ed101.firebaseapp.com",
             databaseURL: "https://esp32-sensor-data-ed101-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "esp32-sensor-data-ed101",
-            storageBucket: "esp32-sensor-data-ed101.appspot.com",
-            messagingSenderId: "704351048238",
-            appId: "1:704351048238:web:f5b5c2728b7af9ea9145bf",
-            measurementId: "G-GRG73670NC"
+            projectId: "esp32-sensor-data-ed101"
         };
         
         // 全局变量
@@ -961,13 +957,8 @@
         // 保存数据到内存
         function saveSensorData(data) {
             try {
-                // 添加新数据
-                sensorDataHistory.push(data);
-                
-                // 只保留最近100条数据
-                if (sensorDataHistory.length > 100) {
-                    sensorDataHistory = sensorDataHistory.slice(-100);
-                }
+                // 替换内存数据为最新的单条数据
+                sensorDataHistory = [data];
             } catch (error) {
                 console.error('存储数据失败:', error);
             }
@@ -1004,8 +995,6 @@
                             // 更新UI
                             updateUI(latestData);
                         }
-                        // 更新图表
-                        drawSensorChart();
                     }
                 });
             } catch (error) {
@@ -1028,12 +1017,8 @@
                         // 获取最新的数据
                         if (history.length > 0) {
                             const latestData = history[history.length - 1];
-                            // 保存到内存
-                            saveSensorData(latestData);
                             // 更新UI
                             updateUI(latestData);
-                            // 更新图表
-                            drawSensorChart();
                         }
                     }
                 });
@@ -1105,7 +1090,9 @@
                 if (history && history.length > 0) {
                     history.forEach((item) => {
                         if (item.timestamp !== undefined && item.temperature !== undefined && item.humidity !== undefined) {
-                            const date = new Date(item.timestamp);
+                            // 确保时间戳是数字类型
+                            const timestamp = typeof item.timestamp === 'string' ? parseInt(item.timestamp) : item.timestamp;
+                            const date = new Date(timestamp);
                             const hours = date.getHours().toString().padStart(2, '0');
                             const minutes = date.getMinutes().toString().padStart(2, '0');
                             timestamps.push(`${hours}:${minutes}`);
@@ -1133,7 +1120,9 @@
                                 borderColor: 'rgb(255, 99, 132)',
                                 backgroundColor: 'rgba(255, 99, 132, 0.2)',
                                 borderWidth: 2,
-                                tension: 0.4
+                                tension: 0.8,
+                                pointRadius: 0,
+                                pointHoverRadius: 0
                             },
                             {
                                 label: '湿度 (%)',
@@ -1141,7 +1130,9 @@
                                 borderColor: 'rgb(54, 162, 235)',
                                 backgroundColor: 'rgba(54, 162, 235, 0.2)',
                                 borderWidth: 2,
-                                tension: 0.4
+                                tension: 0.8,
+                                pointRadius: 0,
+                                pointHoverRadius: 0
                             }
                         ]
                     },
@@ -1188,7 +1179,10 @@
                                 },
                                 titleFont: {
                                     size: 11
-                                }
+                                },
+                                mode: 'index',
+                                intersect: false,
+                                enabled: true
                             }
                         }
                     }
