@@ -916,9 +916,9 @@
                     datetime: new Date().toLocaleString()
                 };
                 
-                // 生成唯一键并保存数据到data/messages节点
+                // 生成唯一键并保存数据到根目录的messages节点
                 const key = Date.now().toString();
-                database.ref('data/messages/' + key).set(commentData).then(() => {
+                database.ref('messages/' + key).set(commentData).then(() => {
                     alert('留言已发送！');
                     this.reset();
                 }).catch((error) => {
